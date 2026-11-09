@@ -1,0 +1,13 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Describe a garden in two sentences."
+    }
+  ],
+  "enable_thinking": false,
+  "max_new_tokens": 64,
+  "max_tokens": 4096,
+  "strength": 1.0,
+  "seed": 7
+}

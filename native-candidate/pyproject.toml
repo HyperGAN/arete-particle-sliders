@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=84.2.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arete-native95-particle-sliders"
+version = "0.1.0"
+description = "Distinct full native Arete27B PG095/explicit-placement/RAW cohort"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+license = "MIT"
+dependencies = [
+  "particle-sliders-core==0.14.1",
+  "transformers==5.15.0",
+  "accelerate==1.15.0",
+  "safetensors>=0.4,<1",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+arete-native-slider = "arete_native95.cli:main"
+
+[project.entry-points."particle_sliders.response_backends"]
+arete_native95 = "arete_native95.lifecycle:TRAINING"
+
+[project.entry-points."particle_sliders.inference_backends"]
+arete_native95 = "arete_native95.lifecycle:INFERENCE"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+arete_native95 = ["model.lock.json", "current_core.json", "host-source.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

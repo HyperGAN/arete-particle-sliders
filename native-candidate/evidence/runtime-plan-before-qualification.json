@@ -1,0 +1,15 @@
+{
+  "schema": "Arete-native95-runtime-candidate-v1",
+  "Source_only": true,
+  "qualified": false,
+  "python": "3.12",
+  "torch": "2.9.1",
+  "transformers": "5.15.0",
+  "accelerate": "1.15.0",
+  "core_version": "0.14.1",
+  "core_commit": "41f6066f2d2644902670d5eb736de052e1a70553",
+  "particlegan": "0.9.5",
+  "native_tiny_actual_result": null,
+  "pretrained_actual_result": null,
+  "scope": "A NEW isolated runtime, not an upgrade/relabel of historical Arete or an existing qualified prefix"
+}

@@ -1,0 +1,2 @@
+{"neutral_messages": [{"role": "user", "content": "Describe a garden in two sentences."}], "positive_messages": [{"role": "system", "content": "Use a cheerful, appreciative tone."}, {"role": "user", "content": "Describe a garden in two sentences."}]}
+{"neutral_messages": [{"role": "user", "content": "Describe a quiet coastal town in two sentences."}], "positive_messages": [{"role": "system", "content": "Use a cheerful, appreciative tone."}, {"role": "user", "content": "Describe a quiet coastal town in two sentences."}]}

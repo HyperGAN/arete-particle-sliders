@@ -1,0 +1,10 @@
+{
+  "schema": "arete-native95-host-source-extraction-v1",
+  "source_repository": "https://github.com/HyperGAN/arete-particle-sliders",
+  "source_commit": "37e6a701ff1e0baf871839af48eaca1299e366db",
+  "source_path": "src/arete_particle_sliders/backend.py",
+  "bytes": 9359,
+  "sha256": "20757604f4c28a0415e0c9f7dde15e447b956cbcaf118ccf47ff67603197b072",
+  "local_file": "host_source.py",
+  "scope": "Exact Qwen3.5 architecture fixture/target walk/chat/lock helpers; old PG094 binding never imported"
+}
