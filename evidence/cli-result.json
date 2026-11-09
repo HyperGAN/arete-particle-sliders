@@ -1,0 +1,19 @@
+{
+  "status": "completed",
+  "completed_steps": 4,
+  "target_steps": 4,
+  "profile": "arete-cpu-fixture",
+  "qualification": "fixture",
+  "checkpoint": "<fixture-output>/artifacts/checkpoints/step-000004",
+  "adapter": "<fixture-output>/artifacts/adapter-v2.pt",
+  "semantic_sha256": "8253f9adc2e2d2dd2abe40d12211bd09b99b3f2f84dd5a8efa398793ce6564b9",
+  "runtime_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "native_result": {
+    "status": "completed",
+    "completed_steps": 4,
+    "checkpoint": "<fixture-output>/artifacts/checkpoints/step-000004",
+    "adapter": "<fixture-output>/artifacts/adapter-v2.pt",
+    "rendered_images": 0,
+    "lr_search": false
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/HyperGAN/arete-particle-sliders",
+  "model": "NousResearch/Arete-27B",
+  "model_revision": "108f0afbdcfaa1ceeda4a635004304dfff6d4da2",
+  "shared_core": "HyperGAN/particle-sliders",
+  "core_commit": "5d68473a098801ee1ab3ebbb12463daef51c6346",
+  "adapted_from": "gemma-particle-sliders (MIT adaptation reference; source identity below)",
+  "source_license": "MIT",
+  "model_license": "Apache-2.0",
+  "source_files": [
+    "binding.py",
+    "learning_rates.py",
+    "training_profile.py",
+    "tools/refresh_source_lock.py"
+  ],
+  "qualification": "random architecture fixture only; no pretrained training",
+  "adapted_from_commit": "d053bfa883ff853d10a80acf1b4562adbdc93459",
+  "ownership_check": "Authenticated organization inventory found no existing target before initial source publication.",
+  "binding_reference_commit": "d053bfa883ff853d10a80acf1b4562adbdc93459",
+  "binding_reference_sha256": "b791ee0b2b74fe8ef4cb82406dd22e38cb356d421e4b0ca8e3a7f15fe882728b"
+}

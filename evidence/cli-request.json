@@ -1,0 +1,75 @@
+{
+  "schema": "particle-slider-train-v1",
+  "training": {
+    "backend": "arete-particle-sliders",
+    "cohort": "arete-pg094-hypergan-hndl-v1-cpu-fixture",
+    "options": {
+      "checkpointing": true,
+      "dummy": true,
+      "ema_decay": null,
+      "fixture": true,
+      "fixture_width": 16,
+      "rows": [
+        {
+          "neutral_ids": [
+            1,
+            2
+          ],
+          "positive_ids": [
+            1,
+            3
+          ]
+        },
+        {
+          "neutral_ids": [
+            4,
+            5
+          ],
+          "positive_ids": [
+            4,
+            6
+          ]
+        }
+      ],
+      "steps": 4,
+      "device": "cpu"
+    }
+  },
+  "execution": {
+    "runner": "local",
+    "device": "cpu"
+  },
+  "output": {
+    "root": "<fixture-output>",
+    "checkpoint_every": 2,
+    "selection": "raw",
+    "export_format": "v2"
+  },
+  "profile": "arete-cpu-fixture",
+  "input_files": [],
+  "reporting": null,
+  "resolved": {
+    "profile": {
+      "schema": "particle-slider-profile-v1",
+      "name": "arete-cpu-fixture",
+      "product": "arete-particle-sliders",
+      "config_kind": "session",
+      "status": "fixture",
+      "interface": "response",
+      "backend": "arete-particle-sliders",
+      "runtime": {},
+      "capabilities": {
+        "resume": true,
+        "periodic_checkpoint": true,
+        "check": true
+      },
+      "default_checkpoint_every": 2,
+      "qualification": "Random CPU Qwen3.5 architecture fixture; pretrained/GPU unqualified"
+    },
+    "profile_dir": "<checkout>/examples",
+    "config_dir": "<checkout>/examples",
+    "target_steps": 4,
+    "semantic_sha256": "8253f9adc2e2d2dd2abe40d12211bd09b99b3f2f84dd5a8efa398793ce6564b9",
+    "runtime_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+  }
+}

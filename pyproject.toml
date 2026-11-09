@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=84.2.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arete-particle-sliders"
+version = "0.1.0"
+description = "NousResearch Arete Qwen3.5 bindings to the shared ParticleGAN slider lifecycle"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11,<3.15"
+dependencies = [
+  "particle-sliders-core[hypergan-hndl] @ git+https://github.com/HyperGAN/particle-sliders.git@5d68473a098801ee1ab3ebbb12463daef51c6346#subdirectory=packages/particle-sliders-core",
+  "transformers==5.15.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "build>=1", "safetensors>=0.4,<1"]
+
+[project.entry-points."particle_sliders.response_backends"]
+arete-particle-sliders = "arete_particle_sliders.binding:BACKEND"
+
+[project.entry-points."particle_sliders.inference_backends"]
+arete-particle-sliders = "arete_particle_sliders.binding:INFERENCE"
+
+[project.entry-points."particle_sliders.training_profiles"]
+arete-cpu-fixture = "arete_particle_sliders.training_profile:TRAINING_PROFILE"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+arete_particle_sliders = ["sources.lock.json", "model.lock.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,50 @@
+{
+  "tests": 22,
+  "failed": 0,
+  "skipped": 0,
+  "test_names": [
+    "test_actual_conditional_hybrid_architecture[16]",
+    "test_actual_conditional_hybrid_architecture[32]",
+    "test_shared_updates_gradients_frozen_base_and_exact_off",
+    "test_exact_checkpoint_resume_and_raw_inference",
+    "test_pretrained_training_refuses_before_loading",
+    "test_invalid_options_refuse_before_loading[options0]",
+    "test_invalid_options_refuse_before_loading[options1]",
+    "test_invalid_options_refuse_before_loading[options2]",
+    "test_invalid_options_refuse_before_loading[options3]",
+    "test_invalid_options_refuse_before_loading[options4]",
+    "test_invalid_options_refuse_before_loading[options5]",
+    "test_invalid_options_refuse_before_loading[options6]",
+    "test_invalid_options_refuse_before_loading[options7]",
+    "test_chat_uses_native_template_with_explicit_thinking",
+    "test_full_config_meta_targets_match_official_weight_index",
+    "test_checkpoint_rejects_changed_rows",
+    "test_product_source_tampering_refuses",
+    "test_checkpoint_recomputation_retains_scale_and_gradients",
+    "test_native_autoregressive_generation_keeps_raw_branch_and_restores_scale",
+    "test_unstaged_pretrained_source_refuses_before_loading",
+    "test_official_tokenizer_when_staged",
+    "test_shared_cli_explicit_cpu_validation"
+  ],
+  "cli": {
+    "status": "completed",
+    "completed_steps": 4,
+    "target_steps": 4,
+    "profile": "arete-cpu-fixture",
+    "qualification": "fixture",
+    "checkpoint": "<fixture-output>/artifacts/checkpoints/step-000004",
+    "adapter": "<fixture-output>/artifacts/adapter-v2.pt",
+    "semantic_sha256": "8253f9adc2e2d2dd2abe40d12211bd09b99b3f2f84dd5a8efa398793ce6564b9",
+    "runtime_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "native_result": {
+      "status": "completed",
+      "completed_steps": 4,
+      "checkpoint": "<fixture-output>/artifacts/checkpoints/step-000004",
+      "adapter": "<fixture-output>/artifacts/adapter-v2.pt",
+      "rendered_images": 0,
+      "lr_search": false
+    }
+  },
+  "model_weights_downloaded": false,
+  "gpu_workloads_started": false
+}
