@@ -1,0 +1,24 @@
+{
+  "schema": "Arete-native95-runtime-candidate-v1",
+  "python": "3.12",
+  "torch": "2.9.1",
+  "transformers": "5.15.0",
+  "accelerate": "1.15.0",
+  "core_version": "0.14.1",
+  "core_commit": "41f6066f2d2644902670d5eb736de052e1a70553",
+  "particlegan": "0.9.5",
+  "native_tiny_actual_result": {
+    "public_evidence": "evidence/cpu-nine-distinct-qualification.json",
+    "measured_source_commit": "5dfd5459b988e7e18a640d3544e6281105fb9bdf",
+    "distinct_passed_cases": 9,
+    "retained_cases": 8,
+    "new_corrected_cases": 1
+  },
+  "pretrained_actual_result": null,
+  "scope": "Actual random tiny Qwen3.5 software mechanics and complete native5120 contract admission only. No pretrained27B/twoGPU/quality/effect/LR/weights-release qualification.",
+  "status": "CPU_SOFTWARE_QUALIFIED_PRETRAINED_UNQUALIFIED",
+  "native_tiny_CPU_qualified": true,
+  "distinct_passed_cases": 9,
+  "pretrained_27B_qualified": false,
+  "actual_twoGPU_qualified": false
+}

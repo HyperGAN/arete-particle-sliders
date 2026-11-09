@@ -1,0 +1,26 @@
+{
+  "backend": "arete_native95",
+  "cohort": "arete-native095-first-unoptimized-v1",
+  "options": {
+    "model_dir": "/ABSOLUTE/STAGED/Arete-27B",
+    "training_file": "/ABSOLUTE/rows.jsonl",
+    "placement": {
+      "kind": "single",
+      "device": "cpu",
+      "trainable_device": "cpu"
+    },
+    "source_profile": "arete-native5120-pg095-explicit-placement-fresh-v1",
+    "initialization_policy": "arete-kaiming-RMS-QR-zero-up-bank-R2-std1-v1",
+    "pg_version": "0.9.5",
+    "pg_source_profile": "release-0.9.5",
+    "penalty_input_domain": "continuous",
+    "ema_decay": null,
+    "steps": 128,
+    "batch": 2,
+    "seed": 7,
+    "response_width": 5120,
+    "base_precision": "bfloat16",
+    "max_tokens": 4096,
+    "enable_thinking": false
+  }
+}
