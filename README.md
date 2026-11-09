@@ -1,5 +1,21 @@
 # Arete particle sliders
 
+**Current measured guidance — 2026-11-09:** saved native RAW32 **G0.012** is best
+tested for cheerful, appreciative tone: **+1.0** versus G0.001 at0.0 across two
+equally weighted garden/coast cases, fixed D0.018000000000000002 / bank0.03.
+Both checkpoints pass their separate catastrophic guards. The trait instrument
+remains provisional (`trait_qualified:false`); no global optimum/default or
+released-weight claim. See [the method and actual API how-to](docs/finished-output-learning-rates.md)
+and [portable choices/evidence hashes](docs/finished-output-rate.json).
+
+The current [native PG0.9.5 project](native-candidate/README.md) preserves the
+original full27B/5120 geometry, fresh-only scoped initialization and RAW/noEMA.
+Actual retained pretrained training, exact continuation and finished texts now
+exist; the source-publication CPU snapshot below is historical. Saved research
+factories/exports remain source-bound, not migrated to a new loader by these docs.
+
+## Historical root PG0.9.4 source-publication snapshot
+
 **Experimental source publication.** Random CPU architecture and tokenizer/software fixtures only. Historical installed suite:22 passed. Full pretrained 27B staging/forward/backward/generation/resume, width5120 profile admission, GPU fit and quality remain unqualified.
 
 See [PUBLICATION.md](PUBLICATION.md) for sanitation, lineage and current CPU/CI limits.

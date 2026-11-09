@@ -6,8 +6,11 @@ are Root-adopted: eight retained passes plus one corrected generation case.**
 Only the failed generation case was run again; the eight passing cases were
 not replayed. [Portable actual evidence](evidence/cpu-nine-distinct-qualification.json)
 retains both attempts, original artifact names/bytes/SHA256, exact versions and
-scope. Pretrained27B execution, actual two-GPU fit, trained controls, useful
-sliders, effect/LR scores and released weights remain unqualified/absent.
+scope. Separately retained actual pretrained27B/two-GPU RAW32 execution and native text
+now support a [completed provisional LR comparison](../docs/finished-output-learning-rates.md):
+G0.012 +1.0 versus G0.001 zero, two equal cases and separate passing catastrophic
+guards. `trait_qualified:false`, no package-default/global optimum or released
+weights. These later results do not broaden the nine tiny CPU cases themselves.
 
 The original root project, PG0.9.4 code, locks, fixtures and evidence stay
 byte-identical. The measured native code/tests/locks are source5dfd5459; this
@@ -19,7 +22,7 @@ Model: [`NousResearch/Arete-27B`](https://huggingface.co/NousResearch/Arete-27B/
 revision `108f0afbdcfaa1ceeda4a635004304dfff6d4da2`. Its pinned model lock covers
 32 files, including18 BF16 shards, total54,743,825,646 bytes. Fresh anonymous
 official API metadata confirms public/ungated access and every existing lock
-size/LFS SHA/Git blob identity. No pretrained model weights were consumed by these CPU checks; staging is a separate prerequisite.
+size/LFS SHA/Git blob identity. No pretrained model weights were consumed by these CPU checks; later staging/native execution is separate evidence.
 
 Serialized architecture is the official `Qwen3_5ForConditionalGeneration`:
 64 text layers (48 gated-linear attention +16 full attention), full hidden
@@ -95,8 +98,9 @@ still require their own dependency review.
 The nine cases exercise real small random Qwen3.5 forward/backward/generation,
 original Parameter ownership, fresh/restore/RAW mechanics, explicit dispatch
 hooks and native5120 continuous admission. They do not execute the full27B or
-actual two-GPU model. Exact32-file staging and a separately admitted full native
-forward/backward/RAW/text pilot are still required.
+actual two-GPU model. Later retained execution uses the exact32-file staged model and separately owned
+full native forward/backward/RAW/text; its scoped choices and limits are recorded
+in the linked guide. Do not replay completed software or native proofs.
 
 ```python
 from arete_native95.contracts import two_device_placement
@@ -129,6 +133,7 @@ against hostile inherited defaults; each inference call preserves CPU/all-owned-
 A context too long is refused, never truncated. OFF/ON differ only by slider
 strength using matched seed/request; no response-vector rendering occurs.
 
-The remaining concrete prerequisites are exact32-file model staging and
-actual owned two-device fit/forward/backward/RAW/native-text execution. There is no trained/released slider, effect score,
-catastrophic qualification or LR winner claim in this source change.
+The code publication itself is separate from later retained training/measurements.
+Use the [current guide](../docs/finished-output-learning-rates.md) for exact rates,
+source-bound artifact limits, fresh versus restore and completed comparisons.
+No ordinary hosted Generate or released weights are claimed.
