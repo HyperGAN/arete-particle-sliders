@@ -1,0 +1,142 @@
+{
+  "schema": "particle-slider-scoped-finished-output-rate-guidance-v1",
+  "as_of": "2026-11-09",
+  "product_id": "arete-particle-sliders",
+  "status": "completed_provisional_best_tested",
+  "concept": "Cheerful, appreciative tone",
+  "selection_metric": "Equal-case arithmetic mean of finished intended-effect intensity ON minus matched OFF; higher wins.",
+  "reuse_completed_searches": true,
+  "additional_fresh_confirmation_required": false,
+  "weight_EMA": null,
+  "selection": "raw",
+  "teacher_SSE_used_for_selection": false,
+  "negative_zero_and_exact_ties_preserved": true,
+  "catastrophic_gate": "Separate qualified catastrophic-only eligibility; weak effect, preservation and beauty are not failures or ranking terms.",
+  "package_defaults_changed": false,
+  "ordinary_Generate": false,
+  "released_weights": 0,
+  "trait_qualified": false,
+  "formal_effect_validation": false,
+  "provisional": true,
+  "selected_unique_G": 0.012,
+  "common_rate_overrides": {
+    "lr": 0.012,
+    "d_lr_mult": 1.5,
+    "prior_lr_mult": 2.5,
+    "ema_decay": null
+  },
+  "actual_rates": {
+    "G": 0.012,
+    "D": 0.018000000000000002,
+    "bank": 0.03
+  },
+  "profile": {
+    "comparison_updates": 32,
+    "horizon": 128,
+    "batch": 2,
+    "rank": 8,
+    "seed": 7,
+    "native_response_width": 5120,
+    "native_max_new_tokens": 64
+  },
+  "effect_units": "raw0..4 intensity difference; equal two-case mean",
+  "case_weights": {
+    "garden-seed7": 0.5,
+    "coast-seed7": 0.5
+  },
+  "candidate_levels": {
+    "G.012": {
+      "garden-seed7": {
+        "OFF": 3,
+        "ON": 4
+      },
+      "coast-seed7": {
+        "OFF": 0,
+        "ON": 1
+      }
+    },
+    "G.001": {
+      "garden-seed7": {
+        "OFF": 3,
+        "ON": 3
+      },
+      "coast-seed7": {
+        "OFF": 0,
+        "ON": 0
+      }
+    }
+  },
+  "candidate_means": {
+    "G.012": 1.0,
+    "G.001": 0.0
+  },
+  "saved_output_catastrophic_guards": "Both genuine RAW32/FULL32 candidates pass their own qualified catastrophic guard; this does not qualify the cheerful-intensity instrument.",
+  "prior_RAW2_gain": 0.0,
+  "source_identity": {
+    "product_scientific_commit": "5dfd5459b988e7e18a640d3544e6281105fb9bdf",
+    "core_commit": "41f6066f2d2644902670d5eb736de052e1a70553",
+    "ParticleGAN": "0.9.5",
+    "native_model": "NousResearch/Arete-27B",
+    "native_model_revision": "108f0afbdcfaa1ceeda4a635004304dfff6d4da2"
+  },
+  "selected_RAW": {
+    "role": "selected_RAW_metadata_only",
+    "campaign_record": "RAW-000032.pt",
+    "bytes": 110180854,
+    "sha256": "900e64793da1f6173dc65c299f554dbcfc8f74077f575d07ae98a777be8d6dc9",
+    "availability": "Private retained evidence; not bundled or a public download URL."
+  },
+  "selected_FULL": {
+    "role": "selected_FULL_metadata_only",
+    "campaign_record": "FULL-000032.pt",
+    "bytes": 113932709,
+    "sha256": "bc44a07135f6ac1fda8eb93852b495f42ac296ddeff6387b93f4e03544105914",
+    "availability": "Private retained evidence; not bundled or a public download URL."
+  },
+  "source_records": [
+    {
+      "role": "decision",
+      "campaign_record": "recommendations/arete-native64-two-case-RAW32-provisional-best-tested.json",
+      "bytes": 6347,
+      "sha256": "102cd68634fdfcb62e3dd9ed45163a28d676bf8636f2cf7c72ac1238d99e994b",
+      "availability": "Private retained evidence; not bundled or a public download URL."
+    },
+    {
+      "role": "measurement_result",
+      "campaign_record": "output-effect-scoring/arete-RAW32-garden-coast-catastrophe-and-provisional-cheerful-GPU1-actual-v1/result.json",
+      "bytes": 11721,
+      "sha256": "1b8ab14937d7ca7a5b57fe30ff0ee174db1fa0e6449a92739328d92509360c7c",
+      "availability": "Private retained evidence; not bundled or a public download URL."
+    },
+    {
+      "role": "measurement_result",
+      "campaign_record": "output-effect-scoring/arete-new-G001-RAW32-garden-coast-four-missing-firsts-GPU1-actual-v1/result.json",
+      "bytes": 15591,
+      "sha256": "36559186179a03407f7b81d16741433d92aa171374303cb7b75729e7de736b62",
+      "availability": "Private retained evidence; not bundled or a public download URL."
+    },
+    {
+      "role": "qualified_catastrophic_guard",
+      "campaign_record": "universal-failure/arete-RAW32-two-nominal-FULL32-existing-firsts-actual-v1/Root-actual-FULL32-two-nominal-qualified-catastrophe-core-guard-integration.json",
+      "bytes": 6867,
+      "sha256": "432f5ca54786e84663dbddc17195b5f85e0a5d3f8465fd50410a126fc2c63230",
+      "availability": "Private retained evidence; not bundled or a public download URL."
+    },
+    {
+      "role": "qualified_catastrophic_guard",
+      "campaign_record": "universal-failure/arete-new-G001-FULL32-two-nominal-existing-firsts-actual-v1/Root-actual-new-G001-FULL32-two-nominal-qualified-catastrophe-core-guard-integration.json",
+      "bytes": 7694,
+      "sha256": "05778ce5134a125faaf62b92440ef82fac9f7a8e2bc85e08dd32cbfcc1a3f4ca",
+      "availability": "Private retained evidence; not bundled or a public download URL."
+    },
+    {
+      "role": "settings_pack_snapshot",
+      "campaign_record": "recommendations/finished-output-best-tested.json",
+      "bytes": 190197,
+      "sha256": "3fb053c6c8a6fde992f7dd602ba56b68fa46a1c62fd0ad65250fd39c67475e4e",
+      "availability": "Private retained evidence; not bundled or a public download URL."
+    }
+  ],
+  "scope": "Only these two genuine RAW32 arms, fixed original D/bank/native/profile/budget and equally weighted garden/coast cases; use saved G.012 as best tested. Provisional cheerful instrument, no global LR optimum or transfer to other concepts/budgets.",
+  "checkpoint_availability": "Retained RAW/FULL/caches are private and source-bound. This summary reproduces scalar arithmetic; it does not release weights or bundle a native run."
+}
