@@ -1,5 +1,7 @@
 # Arete particle sliders
 
+**Calculated memory:** Explicit32/32 split, checkpointed 256-token training: **36/38 GiB GPU / 68 GiB host**. Default 4096-token training without checkpointing has a much larger separate budget. [Full memory ledger and limits](MEMORY.md). These are planning estimates, not measured peaks.
+
 **Current measured guidance — 2026-11-09:** saved native RAW32 **G0.012** is best
 tested for cheerful, appreciative tone: **+1.0** versus G0.001 at0.0 across two
 equally weighted garden/coast cases, fixed D0.018000000000000002 / bank0.03.
