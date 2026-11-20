@@ -1,7 +1,7 @@
 """Full matched native contexts; the tokenizer never truncates a prompt."""
 import json
 from pathlib import Path
-from particle_sliders.pg09_audio import AudioRow
+from particle_sliders.audio import AudioRow
 from .host_source import encode_chat
 
 

@@ -3,8 +3,8 @@ from copy import deepcopy
 import torch
 from particle_sliders.inference import InferenceBackend,InferenceBinding,native_identity
 from particle_sliders.lifecycle import Binding,Capabilities,read_packet
-from particle_sliders.pg095 import ConditionalPG095,engine_options,validate_pg09_domain
-from particle_sliders.pg09_audio import AudioResponseCritic,audio_conditions
+from particle_sliders.engine import ConditionalParticleGAN,engine_options,validate_engine_domain
+from particle_sliders.audio import AudioResponseCritic,audio_conditions
 from particle_sliders.response import ResponseBackend,ResponseCapabilities
 from particle_sliders.restoration import _restore_all
 from .contracts import (BACKEND,DEFAULTS,INITIALIZATION_POLICY,PROTOCOL,SOURCE_PROFILE,WEIGHT_POLICY,
@@ -16,7 +16,7 @@ from .data import read_rows
 
 def capabilities(options):
     return ResponseCapabilities('routed_particle_gan','text','native_final_AR_token_hidden','continuous_vector',
-        (1,architecture(options)['response_width']),'0.9.5','release-0.9.5',penalty_input_domain='continuous',
+        (1,architecture(options)['response_width']),'0.11.0','release-0.11.0',penalty_input_domain='continuous',
         base_precisions=('float32','bfloat16'),qualification='New Source; actual native tiny/pretrained qualification not yet run')
 
 
@@ -26,7 +26,7 @@ TEXT_CAPABILITIES=Capabilities('routed_particle_gan',render=True,render_outputs=
 
 def validate_training(options):
     validate_native_options(options,training=True);validate_installed_core()
-    validate_pg09_domain((1,architecture(options)['response_width']),response_domain='continuous_vector',
+    validate_engine_domain((1,architecture(options)['response_width']),response_domain='continuous_vector',
         **engine_options(options))
 
 
@@ -68,7 +68,7 @@ def prepare_training(options,*,construction=None):
             native.fresh_initialization=receipt.as_dict()
         if any(p.device!=runtime.trainable_device or p.dtype!=torch.float32 for p in native.network.parameters()):
             raise ValueError('all original adapter Parameters must stay together on the declared PGdevice')
-        game=ConditionalPG095(native,rows,critic,conditions=cond,particles=native.network.particles,
+        game=ConditionalParticleGAN(native,rows,critic,conditions=cond,particles=native.network.particles,
             response_domain='continuous_vector',total_steps=options.get('steps',4),batch_size=options.get('batch',2),
             seed=options.get('seed',7),recipe_overrides=rate_overrides(options),**engine_options(options))
         spec=INFERENCE.specification(native,model_identity=native.model_identity,protocol=PROTOCOL,
@@ -85,11 +85,11 @@ def validate_inference(options,spec):
     if (set(config)!={'architecture','source_profile','initialization_policy','weight_policy','initialization'}
         or config['source_profile']!=SOURCE_PROFILE or config['initialization_policy']!=INITIALIZATION_POLICY
         or config['weight_policy']!=WEIGHT_POLICY or spec.identity['protocol']!=PROTOCOL):
-        raise ValueError('requires the exact new Arete095 RAW cohort; no historical packet migration')
+        raise ValueError('requires the exact new Arete native RAW cohort; no historical packet migration')
     validate_receipt(config['initialization'],cohort=config['initialization'].get('cohort_id'))
     validate_native_options(dict(options,**config['architecture']))
-    validate_pg09_domain((1,config['architecture']['response_width']),response_domain='continuous_vector',
-        pg_source_profile='release-0.9.5',penalty_input_domain='continuous')
+    validate_engine_domain((1,config['architecture']['response_width']),response_domain='continuous_vector',
+        pg_source_profile='release-0.11.0',penalty_input_domain='continuous')
 
 
 def preflight_inference(options,request,spec):

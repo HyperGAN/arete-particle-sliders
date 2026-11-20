@@ -1,6 +1,6 @@
-# Arete native PG0.9.5 source
+# Arete native Particle Sliders
 
-This separate `arete_native95` project implements the full native Arete27B
+This separate `arete_native` project implements the full native Arete27B
 training/RAW/finished-text route. **Nine distinct tiny native CPU software cases
 are Root-adopted: eight retained passes plus one corrected generation case.**
 Only the failed generation case was run again; the eight passing cases were
@@ -12,9 +12,7 @@ G0.012 +1.0 versus G0.001 zero, two equal cases and separate passing catastrophi
 guards. `trait_qualified:false`, no package-default/global optimum or released
 weights. These later results do not broaden the nine tiny CPU cases themselves.
 
-The original root project, PG0.9.4 code, locks, fixtures and evidence stay
-byte-identical. The measured native code/tests/locks are source5dfd5459; this
-publication updates documentation and portable evidence only.
+Historical evidence and artifacts retain their original provenance.
 
 ## Native route and exact sources
 
@@ -32,7 +30,7 @@ are used; no older/different model fallback. Only the same304 language attention
 Linears are adapted. Vision, MLPs, embeddings, recurrent/convolution parameters,
 normalizations and output head stay frozen.
 
-Shared core0.14.1@`41f6066f2d2644902670d5eb736de052e1a70553` owns PG0.9.5,
+Shared core 0.15.1 at `c13890f8e2a1ecf1dc8eb9f2a37f9187cb9fea78` owns the ParticleGAN 0.11.0 game,
 optimizers, exact FULL/RNG/optimizer restoration and native RAW artifacts. The
 product explicitly declares `penalty_input_domain='continuous'`; the training
 response is the complete final native AR-token5120 state, with the same frozen
@@ -82,11 +80,11 @@ all actual distribution versions. The original prospective runtime plan is
 retained as a clearly historical [snapshot](evidence/runtime-plan-before-qualification.json).
 Use a separate compatible environment; do not upgrade or relabel historical
 prefixes. No old CPU cases/proofs need replaying merely for publication.
-The source validator requires the exact core41f API bodies, not merely the
-version0.14.1 label. From a fresh Python3.12 environment and this repository:
+The source validator checks the installed core 0.15.1 API file hashes.
+Install from this checkout in a fresh Python 3.12 environment.
 
 ```sh
-python -m pip install 'torch==2.9.1' 'particle-sliders-core @ git+https://github.com/HyperGAN/particle-sliders.git@41f6066f2d2644902670d5eb736de052e1a70553#subdirectory=packages/particle-sliders-core' './native-candidate'
+python -m pip install 'torch==2.9.1' 'particle-sliders-core @ git+https://github.com/HyperGAN/particle-sliders.git@c13890f8e2a1ecf1dc8eb9f2a37f9187cb9fea78#subdirectory=packages/particle-sliders-core' './native-candidate'
 ```
 
 This is a public installation recipe, not an instruction to rerun already
@@ -103,8 +101,8 @@ full native forward/backward/RAW/text; its scoped choices and limits are recorde
 in the linked guide. Do not replay completed software or native proofs.
 
 ```python
-from arete_native95.contracts import two_device_placement
-from arete_native95.lifecycle import open_training
+from arete_native.contracts import two_device_placement
+from arete_native.lifecycle import open_training
 from particle_sliders.lifecycle import SessionConfig
 # Load examples/native-config.json and set actual model/training paths.
 # For an owned two-GPU entry, replace options['placement'] with this exact map:

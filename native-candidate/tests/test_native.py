@@ -11,11 +11,11 @@ import pytest
 import torch
 from particle_sliders.lifecycle import SessionConfig
 from particle_sliders.inference import open_inference
-from particle_sliders.pg095 import validate_pg09_domain
-from arete_native95 import contracts as c,lifecycle as current
-from arete_native95 import initialization as initialization
-from arete_native95.host_source import make_fixture
-from arete_native95.finished_text import generate
+from particle_sliders.engine import validate_engine_domain
+from arete_native import contracts as c,lifecycle as current
+from arete_native import initialization as initialization
+from arete_native.host_source import make_fixture
+from arete_native.finished_text import generate
 
 
 def equal(a,b):
@@ -48,7 +48,7 @@ def setup(tmp_path,monkeypatch):
         dict(neutral_ids=[1,3],positive_ids=[1,4]),dict(neutral_ids=[1,5],positive_ids=[1,6])])+'\n')
     opts=dict(model_dir=str(root),placement=c.single_placement(),training_file=str(rows),response_width=16,base_precision='float32',
         steps=2,batch=2,seed=7,ema_decay=None,source_profile=c.SOURCE_PROFILE,initialization_policy=c.INITIALIZATION_POLICY,
-        pg_version='0.9.5',pg_source_profile='release-0.9.5',penalty_input_domain='continuous',
+        pg_version='0.11.0',pg_source_profile='release-0.11.0',penalty_input_domain='continuous',
         lr=.001,d_lr_mult=18.,prior_lr_mult=30.)
     runtimes=[]
     def tiny_runtime(options):
@@ -65,7 +65,7 @@ def setup(tmp_path,monkeypatch):
 
 def test_current_core_and_full5120_continuous_gate():
     c.validate_installed_core()
-    gate=validate_pg09_domain((1,5120),response_domain='continuous_vector',pg_source_profile='release-0.9.5',penalty_input_domain='continuous')
+    gate=validate_engine_domain((1,5120),response_domain='continuous_vector',pg_source_profile='release-0.11.0',penalty_input_domain='continuous')
     assert gate['penalty_input_domain']=='continuous'
 
 
@@ -78,7 +78,7 @@ def test_literal_rates_and_ema_refusal_before_any_path_access():
     for decay in(.995,0.,False):
         with pytest.raises(ValueError,match='EMA'):
             c.validate_profile(dict(source_profile=c.SOURCE_PROFILE,initialization_policy=c.INITIALIZATION_POLICY,
-                pg_version='0.9.5',pg_source_profile='release-0.9.5',penalty_input_domain='continuous',ema_decay=decay))
+                pg_version='0.11.0',pg_source_profile='release-0.11.0',penalty_input_domain='continuous',ema_decay=decay))
 
 
 def test_two_device_map_covers_every_official_native_parameter_boundary():
@@ -183,8 +183,8 @@ def test_missing_intent_and_legacy_backend_refused_before_allocation(setup,monke
 
 def test_real_official_dispatch_hooks_preserved_and_gradients(setup):
     from accelerate.hooks import attach_execution_device_hook
-    from arete_native95.targets import native_attention_targets
-    from arete_native95.native import NativeResponse
+    from arete_native.targets import native_attention_targets
+    from arete_native.native import NativeResponse
     config,runtimes=setup
     runtime=current.load_runtime(config.options)
     attach_execution_device_hook(runtime.model,torch.device('cpu'))

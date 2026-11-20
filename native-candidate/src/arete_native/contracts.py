@@ -4,11 +4,11 @@ import json
 import math
 from pathlib import Path
 
-CORE_REVISION='41f6066f2d2644902670d5eb736de052e1a70553'
-BACKEND='arete_native95'
-SOURCE_PROFILE='arete-native5120-pg095-explicit-placement-fresh-v1'
+CORE_REVISION='c13890f8e2a1ecf1dc8eb9f2a37f9187cb9fea78'
+BACKEND='arete_native'
+SOURCE_PROFILE='arete-native5120-engine-explicit-placement-fresh-v1'
 INITIALIZATION_POLICY='arete-kaiming-RMS-QR-zero-up-bank-R2-std1-v1'
-PROTOCOL='arete095-native-final-token-5120-and-finished-text-v1'
+PROTOCOL='arete-native-native-final-token-5120-and-finished-text-v1'
 WEIGHT_POLICY='raw-no-weight-EMA'
 MODEL='NousResearch/Arete-27B'
 REVISION='108f0afbdcfaa1ceeda4a635004304dfff6d4da2'
@@ -59,8 +59,8 @@ def rate_overrides(options):
 
 def validate_profile(options):
     if(options.get('source_profile'),options.get('initialization_policy'),options.get('pg_version'),
-        options.get('pg_source_profile'),options.get('penalty_input_domain'))!=(SOURCE_PROFILE,INITIALIZATION_POLICY,'0.9.5','release-0.9.5','continuous'):
-        raise ValueError('explicit new Arete095 fresh-init/continuous native profile required')
+        options.get('pg_source_profile'),options.get('penalty_input_domain'))!=(SOURCE_PROFILE,INITIALIZATION_POLICY,'0.11.0','release-0.11.0','continuous'):
+        raise ValueError('explicit new Arete native fresh-init/continuous native profile required')
     if 'ema_decay'not in options or options['ema_decay']is not None or options.get('ema')is not None:
         raise ValueError('explicit ema_decay=None required; all weight EMA refused')
     rate_overrides(options)
@@ -70,7 +70,7 @@ def validate_native_options(options,*,training=False):
     allowed={'model_dir','placement'}|set(DEFAULTS)
     if training:allowed|={'training_file','max_tokens','enable_thinking','steps','batch','seed','ema_decay','source_profile',
         'initialization_policy','pg_version','pg_source_profile','penalty_input_domain','lr','d_lr_mult','prior_lr_mult'}
-    if set(options)-allowed:raise ValueError('unknown Arete095 option; use literal common rates and explicit placement')
+    if set(options)-allowed:raise ValueError('unknown Arete native option; use literal common rates and explicit placement')
     if training:validate_profile(options)
     arch=architecture(options)
     if (arch['rank'],arch['particles'],arch['particle_dim'])!=(8,128,4)or any(type(arch[key])is not int for key in('rank','particles','particle_dim')):
@@ -94,6 +94,6 @@ def validate_native_options(options,*,training=False):
 def validate_installed_core():
     from importlib import metadata
     lock=json.loads(Path(__file__).with_name('current_core.json').read_text());dist=metadata.distribution('particle-sliders-core')
-    if dist.version!=lock['version']or lock['commit']!=CORE_REVISION:raise ValueError('exact current core0.14.1 source cohort required')
+    if dist.version!=lock['version']or lock['commit']!=CORE_REVISION:raise ValueError('exact current core0.15.1 source cohort required')
     for name,expected in lock['checked_api_files'].items():
         if file_hash(dist.locate_file('particle_sliders/'+name))!=expected:raise ValueError('current core Source differs:'+name)

@@ -14,18 +14,18 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from particle_sliders.fibo_hndl import HNDLParticleProjection, verified_builder
+from .fibo_hndl import HNDLParticleProjection, verified_builder
 from particle_sliders.inference import InferenceBackend, InferenceBinding
 from particle_sliders.lifecycle import Binding, SessionConfig
-from particle_sliders.pg094 import ConditionalPG094, PG_SOURCE_PROFILE, PG_VERSION, engine_options
-from particle_sliders.pg09_audio import ARLastHiddenResponseAdapter, AudioRow, audio_conditions
+from particle_sliders.engine import ConditionalParticleGAN, PG_SOURCE_PROFILE, PG_VERSION, engine_options
+from particle_sliders.audio import ARLastHiddenResponseAdapter, AudioRow, audio_conditions
 from particle_sliders.response import ResponseBackend, ResponseCapabilities
 
 from . import backend as host_source
 from .backend import AreteBackend, text_attention_targets
 
 NAME = 'arete-particle-sliders'
-COHORT = 'arete-pg094-hypergan-hndl-v1-cpu-fixture'
+COHORT = 'arete-engine-hypergan-hndl-v1-cpu-fixture'
 PROTOCOL = 'arete-neutral-to-positive-last-hidden-v1'
 CRITIC_GRAPH = '''joined = concat(response, condition, axis=1)
 features = linear(joined, 16, name="hidden")
@@ -33,7 +33,7 @@ features = silu(features)
 linear(features, 1, name="score")
 '''
 ROOT = Path(__file__).parent
-CORE_COMMIT = '5d68473a098801ee1ab3ebbb12463daef51c6346'
+CORE_COMMIT = 'c13890f8e2a1ecf1dc8eb9f2a37f9187cb9fea78'
 
 
 def _digest(path):
@@ -64,7 +64,7 @@ def _core_sources():
 def _core_install_receipt(lock):
     """Require the approved immutable Git origin, not version-only/wheel aliasing."""
     dist = distribution('particle-sliders-core')
-    if (lock.get('core_commit') != CORE_COMMIT or lock.get('core_version') != '0.12.0'
+    if (lock.get('core_commit') != CORE_COMMIT or lock.get('core_version') != '0.15.1'
             or dist.version != lock['core_version']):
         raise ValueError('Arete v1 requires its exact approved core version/source identity')
     try:
@@ -97,8 +97,8 @@ def verify_runtime():
             or Path(host_source.__file__).resolve() != (ROOT / 'backend.py').resolve()):
         raise ValueError('Arete preview imported product/host source closure differs')
     # The official PG closure is independently checked by the shared domain gate.
-    from particle_sliders.pg094 import validate_pg09_domain
-    validate_pg09_domain((1, 1), response_domain='continuous_vector', **engine_options({}))
+    from particle_sliders.engine import validate_engine_domain
+    validate_engine_domain((1, 1), response_domain='continuous_vector', **engine_options({}))
     builder, identity = verified_builder()
     return builder, dict(identity, core_install=install,
         arete_lock_sha256=_digest(ROOT / 'sources.lock.json'),
@@ -174,7 +174,7 @@ class AreteHNDLSlider(nn.Module):
     """One real shared bank and shared HNDL projections; transactional attachment."""
     def __init__(self, model, *, attach=True):
         super().__init__()
-        from particle_sliders.pg09_audio import require_audio_width
+        from particle_sliders.audio import require_audio_width
         cfg = model.config.get_text_config()
         require_audio_width(cfg.hidden_size)
         targets = _targets(model)
@@ -327,9 +327,9 @@ def validate(options):
 
 def _native(options, *, attach=True):
     # Fixed model/domain gate BEFORE a backend can load weights or attach hooks.
-    from particle_sliders.pg094 import validate_pg09_domain
+    from particle_sliders.engine import validate_engine_domain
     cap = capabilities(options)
-    validate_pg09_domain(cap.response_shape, response_domain=cap.response_domain,
+    validate_engine_domain(cap.response_shape, response_domain=cap.response_domain,
                         **engine_options(options))
     if not options.get('fixture', False):
         raise ValueError('native pretrained Arete training requires model/source/resource qualification')
@@ -396,7 +396,7 @@ def prepare(options, *, rows=None):
         with torch.random.fork_rng(devices=[]):
             torch.random.default_generator.manual_seed(options.get('seed', 7) + 1)
             critic = AreteHNDLCritic(width, conditions.shape[1])
-        game = ConditionalPG094(native, prepared, critic, conditions=conditions,
+        game = ConditionalParticleGAN(native, prepared, critic, conditions=conditions,
             particles=native.particles, response_domain='continuous_vector',
             batch_size=options.get('batch', 2), total_steps=options.get('steps', 4),
             seed=options.get('seed', 7), recipe_overrides=rates, **engine_options(options))
@@ -464,5 +464,5 @@ def config(*, fixture=False, **options):
         raise ValueError('Arete requires RAW weights; EMA is disabled')
     options.setdefault('ema_decay', None)
     options.setdefault('dummy', fixture)
-    return SessionConfig(NAME, COHORT if fixture else 'arete-pg094-hypergan-hndl-v1-native-blocked',
+    return SessionConfig(NAME, COHORT if fixture else 'arete-engine-hypergan-hndl-v1-native-blocked',
                          fixture=fixture, **options)

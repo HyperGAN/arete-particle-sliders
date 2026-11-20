@@ -11,7 +11,9 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.11,<3.15"
 dependencies = [
-  "particle-sliders-core[hypergan-hndl] @ git+https://github.com/HyperGAN/particle-sliders.git@5d68473a098801ee1ab3ebbb12463daef51c6346#subdirectory=packages/particle-sliders-core",
+  "particle-sliders-core @ git+https://github.com/HyperGAN/particle-sliders.git@c13890f8e2a1ecf1dc8eb9f2a37f9187cb9fea78#subdirectory=packages/particle-sliders-core",
+  "hndl==0.10.0",
+  "hypergan @ git+https://github.com/HyperGAN/HyperGAN.git@5f368a3770cf5bdae0448995c9f76e29af8049f7",
   "transformers==5.15.0",
 ]
 
@@ -31,7 +33,7 @@ arete-cpu-fixture = "arete_particle_sliders.training_profile:TRAINING_PROFILE"
 where = ["src"]
 
 [tool.setuptools.package-data]
-arete_particle_sliders = ["sources.lock.json", "model.lock.json"]
+arete_particle_sliders = ["*.json", "*.hndl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

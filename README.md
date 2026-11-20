@@ -10,13 +10,13 @@ remains provisional (`trait_qualified:false`); no global optimum/default or
 released-weight claim. See [the method and actual API how-to](docs/finished-output-learning-rates.md)
 and [portable choices/evidence hashes](docs/finished-output-rate.json).
 
-The current [native PG0.9.5 project](native-candidate/README.md) preserves the
+The current [native Arete project](native-candidate/README.md) preserves the
 original full27B/5120 geometry, fresh-only scoped initialization and RAW/noEMA.
 Actual retained pretrained training, exact continuation and finished texts now
 exist; the source-publication CPU snapshot below is historical. Saved research
 factories/exports remain source-bound, not migrated to a new loader by these docs.
 
-## Historical root PG0.9.4 source-publication snapshot
+## CPU architecture fixture
 
 **Experimental source publication.** Random CPU architecture and tokenizer/software fixtures only. Historical installed suite:22 passed. Full pretrained 27B staging/forward/backward/generation/resume, width5120 profile admission, GPU fit and quality remain unqualified.
 
@@ -38,9 +38,8 @@ The product adapts only the host-specific architecture and targets. The pinned
 shared core owns the routed HNDL projection, one shared 128×4 particle bank,
 rank8/alpha8 branches, ParticleGAN game, optimizers, checkpoint lifecycle and
 portable inference artifacts. No shared-core code or existing model product was
-modified. The core dependency is the established immutable cohort
-`5d68473a098801ee1ab3ebbb12463daef51c6346`, version 0.12.0 with ParticleGAN 0.9.4,
-HyperGAN's verified HNDL builder and Transformers 5.15.0.
+modified. The current fixture installs core 0.15.1 at `c13890f8e2a1ecf1dc8eb9f2a37f9187cb9fea78`,
+ParticleGAN 0.11.0, the verified HyperGAN HNDL builder and Transformers 5.15.0.
 
 ## Use the qualified fixture
 
