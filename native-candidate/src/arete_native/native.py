@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import torch
 from torch import nn
-from particle_sliders.pg09_audio import ARLastHiddenResponseAdapter
+from particle_sliders.audio import ARLastHiddenResponseAdapter
 from particle_sliders.restoration import _restore_all
 from . import host_source as host
 from .contracts import MODEL,REVISION,architecture,file_hash,validate_placement
@@ -68,7 +68,7 @@ class _LanguageHost(nn.Module):
 
 
 class NativeResponse(ARLastHiddenResponseAdapter):
-    family='arete095_full_native_final_token'
+    family='arete-native_full_native_final_token'
     def __init__(self,runtime,*,checkpointing=False):
         self.runtime=runtime;self.native_model=runtime.model;self.tokenizer=runtime.tokenizer
         self.slider=AreteSlider(runtime.model,trainable_device=runtime.trainable_device)
@@ -79,7 +79,7 @@ class NativeResponse(ARLastHiddenResponseAdapter):
         try:
             super().__init__(_LanguageHost(runtime.model),self.slider,model_identity=identity,
                 checkpoint_modules=tuple(runtime.model.model.language_model.layers)if checkpointing else(),
-                pg_source_profile='release-0.9.5',penalty_input_domain='continuous')
+                pg_source_profile='release-0.11.0',penalty_input_domain='continuous')
         except BaseException as primary:_restore_all([self.slider.close,runtime.close],primary=primary);raise
 
     def _hidden(self,ids):

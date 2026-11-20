@@ -2,7 +2,7 @@
 
 The original Arete host helper is copied byte-for-byte from
 HyperGAN/arete-particle-sliders@37e6a701 (MIT), with its extraction identity in
-`src/arete_native95/host-source.json`; the original MIT license is included.
+`src/arete_native/host-source.json`; the original MIT license is included.
 
 `initialization.py` derives from HyperGAN/sophon-particle-sliders local source
 175edeeade49f1e4044dc76f6a7f156cb1928482 (Apache-2.0), adapted for the new Arete

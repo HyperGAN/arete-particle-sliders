@@ -14,7 +14,7 @@ def main(argv=None):
     args=parser.parse_args(argv)
     if args.command=='check':
         from .contracts import BACKEND,CORE_REVISION,SOURCE_PROFILE,INITIALIZATION_POLICY
-        print(json.dumps(dict(backend=BACKEND,core=CORE_REVISION,PG='0.9.5',source_profile=SOURCE_PROFILE,
+        print(json.dumps(dict(backend=BACKEND,core=CORE_REVISION,PG='0.11.0',source_profile=SOURCE_PROFILE,
             initialization_policy=INITIALIZATION_POLICY,selection='raw',ema_decay=None,native_width=5120,
             placement='explicit single or two CUDA native module map; no auto/balanced',pretrained_qualified=False),indent=2));return
     if args.command=='train':

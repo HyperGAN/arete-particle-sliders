@@ -1,6 +1,6 @@
 {
   "backend": "arete-particle-sliders",
-  "cohort": "arete-pg094-hypergan-hndl-v1-cpu-fixture",
+  "cohort": "arete-engine-hypergan-hndl-v1-cpu-fixture",
   "options": {
     "checkpointing": true,
     "dummy": true,

@@ -9,10 +9,10 @@
       "device": "cpu",
       "trainable_device": "cpu"
     },
-    "source_profile": "arete-native5120-pg095-explicit-placement-fresh-v1",
+    "source_profile": "arete-native5120-engine-explicit-placement-fresh-v1",
     "initialization_policy": "arete-kaiming-RMS-QR-zero-up-bank-R2-std1-v1",
-    "pg_version": "0.9.5",
-    "pg_source_profile": "release-0.9.5",
+    "pg_version": "0.11.0",
+    "pg_source_profile": "release-0.11.0",
     "penalty_input_domain": "continuous",
     "ema_decay": null,
     "steps": 128,

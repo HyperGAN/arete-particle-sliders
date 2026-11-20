@@ -71,7 +71,7 @@ def generate(native,*,messages=None,ids=None,enable_thinking=False,max_tokens=40
         raise ValueError('one actual generated native sequence with unchanged complete prefix required')
     tokens=sequences[0,len(ids):].detach().cpu().tolist()
     text=runtime.tokenizer.decode(tokens,skip_special_tokens=False)
-    return TextOutput(text,dict(schema='arete095-native-finished-text-v1',model=runtime.identity,
+    return TextOutput(text,dict(schema='arete-native-native-finished-text-v1',model=runtime.identity,
         selection='raw',weight_EMA=None,prompt_tokens=len(ids),new_token_ids=tokens,
         native_eos_token_id=generation.eos_token_id,native_pad_token_id=generation.pad_token_id,
         native_bos_token_id=generation.bos_token_id,

@@ -19,7 +19,7 @@ class AreteSlider(nn.Module):
     @atomic_attachment('model')
     def __init__(self,model,*,trainable_device):
         super().__init__()
-        if any(hasattr(m,'_arete095_owner')for m in model.modules()):raise ValueError('Arete already attached')
+        if any(hasattr(m,'_arete_native_owner')for m in model.modules()):raise ValueError('Arete already attached')
         plan=native_attention_targets(model)
         self._modes=[(m,m.training)for m in model.modules()]
         self._grad=[(p,p.requires_grad)for p in model.parameters()]
@@ -29,7 +29,7 @@ class AreteSlider(nn.Module):
         self.projections=nn.ModuleList();self._hosts=[];self.target_names=tuple(plan)
         for name,host in plan.items():
             projection=TinyParticleProjection(name,host,self.particles,8,8.).float().to(trainable_device)
-            object.__setattr__(host,'_arete095_owner',self)
+            object.__setattr__(host,'_arete_native_owner',self)
             self.projections.append(projection);self._hosts.append((host,projection,host.forward))
         self.closed=False
 
@@ -46,9 +46,9 @@ class AreteSlider(nn.Module):
     def close(self):
         if self.closed:return
         if getattr(self,'_activation_stack',None):raise RuntimeError('cannot detach active slider')
-        if any(getattr(host,'_arete095_owner',None)is not self or host.forward!=attached for host,_,attached in self._hosts):
+        if any(getattr(host,'_arete_native_owner',None)is not self or host.forward!=attached for host,_,attached in self._hosts):
             raise RuntimeError('Arete forward ownership changed; do not remove foreign hooks')
-        for host,projection,_ in reversed(self._hosts):host.forward=projection.org_forward;del host._arete095_owner
+        for host,projection,_ in reversed(self._hosts):host.forward=projection.org_forward;del host._arete_native_owner
         for p,flag in self._grad:p.requires_grad_(flag)
         for m,flag in self._modes:m.training=flag
         self.closed=True

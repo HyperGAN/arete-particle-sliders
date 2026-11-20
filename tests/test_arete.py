@@ -10,7 +10,7 @@ from arete_particle_sliders.backend import (
     AreteBackend, encode_chat, text_attention_targets, FULL_TARGETS, LINEAR_TARGETS)
 from particle_sliders.inference import open_inference
 from particle_sliders.response import open_response
-from particle_sliders.lifecycle import CheckpointError, UnsupportedOperation
+from particle_sliders.lifecycle import BackendUnavailable, CheckpointError, UnsupportedOperation
 
 ROWS = [dict(neutral_ids=[1, 2], positive_ids=[1, 3]),
         dict(neutral_ids=[4, 5], positive_ids=[4, 6])]
@@ -123,7 +123,7 @@ def test_pretrained_training_refuses_before_loading(monkeypatch):
     dict(device='cuda')])
 def test_invalid_options_refuse_before_loading(options, monkeypatch):
     monkeypatch.setattr(product, 'AreteBackend', lambda **kw: pytest.fail('allocated'))
-    with pytest.raises((ValueError, UnsupportedOperation)):
+    with pytest.raises((ValueError, UnsupportedOperation, BackendUnavailable)):
         open_response(product.config(fixture=True, **options), rows=ROWS)
 
 

@@ -1,10 +1,9 @@
-# Separate native Arete PG0.9.5 cohort
+# Native Arete
 
-The original root PG0.9.4 code, locks, fixtures and evidence remain unchanged;
-this documentation adds the later native cohort and measured scope. Install the separate [native-candidate project](native-candidate/README.md)
-for namespace `arete_native95`: full5120 continuous responses, the original
-Qwen3.5 conditional model, explicit two-device placement, fresh-only scoped
-initialization, RAW/noEMA, exact FULL continuation and native finished text.
+The separate `arete_native` package installs Particle Sliders core 0.15.1
+and ParticleGAN 0.11.0. It supports full-width 5120 continuous responses and
+explicit scoped initialization. Use the original source and dependency pins
+for saved checkpoints and exports from earlier cohorts.
 
 **Nine distinct native tiny CPU cases passed:** eight retained at d9f9a4d7 plus
 one corrected finished-generation case at5dfd5459. Old passing cases were not
