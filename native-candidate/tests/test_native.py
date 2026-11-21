@@ -16,6 +16,7 @@ from arete_native import contracts as c,lifecycle as current
 from arete_native import initialization as initialization
 from arete_native.host_source import make_fixture
 from arete_native.finished_text import generate
+from arete_native_scheduling import generate as generate_scheduled
 
 
 def equal(a,b):
@@ -179,6 +180,36 @@ def test_missing_intent_and_legacy_backend_refused_before_allocation(setup,monke
     with pytest.raises(ValueError,match='intent'):current.TRAINING.open(config)
     old=SessionConfig('arete-particle-sliders','old-fixture',**config.options)
     with pytest.raises(ValueError,match='historical'):current.open_training(old)
+
+
+def test_scheduled_generation_preserves_the_strict_raw_renderer(setup):
+    config, runtimes = setup
+    with current.open_training(config) as training:
+        training.train(stop_after=1)
+        artifact = training.export_inference(selection='raw')
+    options = dict(model_dir=config.options['model_dir'], placement=c.single_placement())
+    request = dict(ids=[1, 3], max_new_tokens=2)
+    with open_inference(artifact, backend=current.INFERENCE, options=options,
+                        operation='render', output_type='text', native_request=request) as session:
+        native = session.binding.close.__self__
+        applied = []
+
+        def force_token(_layer, _args, logits):
+            applied.append(native.network.scale)
+            result = logits.clone()
+            result[..., 5] += 100
+            return result
+
+        with runtimes[-1].model.lm_head.register_forward_hook(force_token):
+            original = session.render(strength=0.5, **request)
+            constant = generate_scheduled(session, step_gains=[1, 1], strength=0.5, **request)
+            varied = generate_scheduled(session, step_gains=[1.5, 0.5], strength=0.5, **request)
+            final = session.render(strength=0.5, **request)
+        assert original.text == constant.text == final.text
+        assert original.native == {k: v for k, v in constant.native.items() if k != 'strength_schedule'}
+        assert final == original
+        assert varied.native['strength_schedule'] == dict(prefix_tokens=2, effective_strengths=[0.75, 0.25])
+        assert applied == [0.5, 0.5, 0.5, 0.5, 0.75, 0.25, 0.5, 0.5]
 
 
 def test_real_official_dispatch_hooks_preserved_and_gradients(setup):

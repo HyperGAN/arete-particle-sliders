@@ -131,6 +131,13 @@ against hostile inherited defaults; each inference call preserves CPU/all-owned-
 A context too long is refused, never truncated. OFF/ON differ only by slider
 strength using matched seed/request; no response-vector rendering occurs.
 
+To schedule a strictly opened native RAW session, call
+`arete_native_scheduling.generate(session, ids=ids, step_gains=gains,
+max_new_tokens=len(gains), strength=nominal_strength)`. The first gain applies
+to prompt prefill. Later gains apply to the cached evaluations, stopping at
+native EOS. The output sidecar records the effective strengths actually used.
+The pretrained effect comparison is pending.
+
 The code publication itself is separate from later retained training/measurements.
 Use the [current guide](../docs/finished-output-learning-rates.md) for exact rates,
 source-bound artifact limits, fresh versus restore and completed comparisons.
