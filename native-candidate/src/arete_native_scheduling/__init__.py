@@ -5,9 +5,12 @@ from sys import float_info
 
 from arete_native.native import NativeResponse
 
+from .adaptive import CachedGate, CachedPromptSteering, render_adaptive
+from .steering_core import load_steering_core
 
-def generate(session, *, step_gains, strength=1.0, max_new_tokens=128, **request):
-    """Render native text with one gain per prefill or cached decode evaluation."""
+
+def generate(session, *, step_gains=None, steering=None, strength=1.0, max_new_tokens=128, **request):
+    """Render native text with fixed gains or calibrated cached steering."""
     session._open()
     binding = session.binding
     native = getattr(binding.close, "__self__", None)
@@ -16,6 +19,13 @@ def generate(session, *, step_gains, strength=1.0, max_new_tokens=128, **request
         raise ValueError("Arete scheduling requires an open native RAW render session")
     if type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 4096:
         raise ValueError("Arete requires a token budget in [1,4096]")
+    if steering is not None:
+        if type(strength) not in (int, float) or not -float_info.max <= strength <= float_info.max:
+            raise ValueError("Arete adaptive strength must be finite")
+        if step_gains is not None:
+            raise ValueError("Use fixed gains or adaptive steering for this request")
+        return render_adaptive(session, native, steering=steering, strength=float(strength),
+                               max_new_tokens=max_new_tokens, **request)
     if type(strength) not in (int, float) or not 0 <= strength <= 1:
         raise ValueError("Arete nominal strength must be in [0,1]")
     if (not isinstance(step_gains, (list, tuple)) or len(step_gains) != max_new_tokens

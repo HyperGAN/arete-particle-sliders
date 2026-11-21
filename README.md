@@ -24,6 +24,9 @@ The returned receipt ends at the native stop token. Constant-gain parity
 passed on the native Qwen3.5 CPU fixture. Pretrained effect is pending.
 [Shared qualification guide](https://github.com/HyperGAN/particle-sliders/blob/main/docs/strength-schedules.md)
 
+See [Arete adaptive strength](docs/adaptive-strength.md) for calibrated cached
+steering during strict native RAW inference.
+
 ## CPU architecture fixture
 
 **Experimental source publication.** Random CPU architecture and tokenizer/software fixtures only. Historical installed suite:22 passed. Full pretrained 27B staging/forward/backward/generation/resume, width5120 profile admission, GPU fit and quality remain unqualified.

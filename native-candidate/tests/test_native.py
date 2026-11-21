@@ -231,3 +231,158 @@ def test_real_official_dispatch_hooks_preserved_and_gradients(setup):
     for name,module in native_attention_targets(runtime.model).items():
         assert module.forward==before[name][0]and module._hf_hook is before[name][1]
     assert not torch.cuda.is_initialized()
+
+
+@pytest.fixture
+def adaptive_setup(setup, monkeypatch):
+    import os
+    import sys
+    from arete_native_scheduling import load_steering_core
+
+    wheel = os.getenv("ARETE_STEERING_CORE_WHEEL")
+    if wheel is None:
+        pytest.skip("Set ARETE_STEERING_CORE_WHEEL to the shared b1f780d wheel")
+    import particle_sliders
+
+    monkeypatch.delenv("ARETE_STEERING_CORE_WHEEL")
+    owners = particle_sliders.__file__, tuple(particle_sliders.__path__), tuple(sys.path)
+    rng = torch.random.get_rng_state()
+    core = load_steering_core(wheel)
+    assert core.adaptive.__name__.startswith("arete_native_scheduling.")
+    assert core.prompt.__name__.startswith("arete_native_scheduling.")
+    assert owners == (particle_sliders.__file__, tuple(particle_sliders.__path__), tuple(sys.path))
+    assert torch.equal(rng, torch.random.get_rng_state())
+    c.validate_installed_core()
+
+    config, runtimes = setup
+    with current.open_training(config) as training:
+        training.train(stop_after=1)
+        artifact = training.export_inference(selection="raw")
+    options = dict(model_dir=config.options["model_dir"], placement=c.single_placement())
+    request = dict(ids=[1, 3], max_new_tokens=4)
+    with open_inference(artifact, backend=current.INFERENCE, options=options,
+                        operation="render", output_type="text", native_request=request) as session:
+        yield session, runtimes[-1].model, core, request
+
+
+def test_adaptive_cfp_raw_exact_logits_at_eos(adaptive_setup):
+    from arete_native_scheduling import CachedGate
+
+    session, model, core, request = adaptive_setup
+    original_scale = session.binding.network.scale
+    observed = []
+
+    def stop_after_prefill(_layer, _args, logits):
+        observed.append(logits.detach().clone())
+        result = logits.clone()
+        token = 5 if len(observed) == 1 else model.generation_config.eos_token_id
+        result[..., token] += 100
+        return result
+
+    direction = torch.ones(16)
+
+    def config(threshold):
+        return CachedGate(core=core, layer=0, method="cfp", parameter=threshold,
+                          intervention="raw_adapter", direction=direction, evidence_ref="test fixture")
+
+    with model.lm_head.register_forward_hook(stop_after_prefill):
+        off = session.render(strength=0.0, **request)
+        off_logits = observed[:]
+        observed.clear()
+        never = generate_scheduled(session, steering=config(-1e20), strength=0.5, **request)
+        equal(observed, off_logits)
+        observed.clear()
+        disabled = generate_scheduled(session, steering=config(1e20), strength=0.0, **request)
+        equal(observed, off_logits)
+        observed.clear()
+        always = generate_scheduled(session, steering=config(1e20), strength=0.5, **request)
+        always_logits = observed[:]
+        observed.clear()
+        fixed = generate_scheduled(session, step_gains=[0, 1, 1, 1], strength=0.5, **request)
+        equal(observed, always_logits)
+
+    assert off.text == never.text == disabled.text
+    assert always.text == fixed.text
+    report = always.native["adaptive_steering"]
+    assert report["usage"] == {"fired": 1, "eligible": 1}
+    assert report["effective_strengths"] == [0.0, 0.5]
+    assert report["cached_steps"][0]["cache_position"] == 2
+    assert disabled.native["adaptive_steering"]["usage"] == {"fired": 0, "eligible": 0}
+    assert session.binding.network.scale == original_scale
+    assert not model._forward_hooks and not model._forward_pre_hooks
+    assert not model.model.language_model.layers[0]._forward_pre_hooks
+
+
+def test_adaptive_clabs_and_psr_edit_native_different_layers(adaptive_setup):
+    from arete_native_scheduling import CachedGate, CachedPromptSteering
+
+    session, model, core, request = adaptive_setup
+
+    def continue_native(_layer, _args, logits):
+        result = logits.clone()
+        result[..., 5] += 100
+        return result
+
+    direction = torch.arange(1.0, 17.0)
+    clabs = core.adaptive.CLABSParameters(mean=0, std=1, epsilon=0.001,
+        setpoint=0.7, proportional_gain=0.3, integral_gain=0.2, beta=0.4)
+    policy = CachedGate(core=core, layer=2, method="clabs", parameter=0.5,
+                        intervention="residual", seed=7, direction=direction,
+                        clabs=clabs, evidence_ref="test fixture")
+    fit = core.prompt.PromptSteering(16)
+    with torch.no_grad():
+        fit.probe.weight.zero_()
+        fit.probe.bias.fill_(0.25)
+        fit.direction.weight.fill_(0.5)
+    psr = CachedPromptSteering(core=core, layer=3, fitted=fit, evidence_ref="test fit")
+    with model.lm_head.register_forward_hook(continue_native):
+        first = generate_scheduled(session, steering=policy, strength=0.7, **request)
+        second = generate_scheduled(session, steering=policy, strength=0.7, **request)
+        observed = []
+        layer = model.model.language_model.layers[3]
+        with layer.input_layernorm.register_forward_pre_hook(
+                lambda _layer, args: observed.append(args[0].detach().clone())):
+            session.render(strength=0.0, **request)
+            unedited, observed[:] = observed[:], []
+            learned = generate_scheduled(session, steering=psr, strength=-0.5, **request)
+        assert torch.equal(unedited[0], observed[0])
+        for before, after in zip(unedited[1:], observed[1:], strict=True):
+            torch.testing.assert_close(after, before - 0.0625, rtol=0, atol=0)
+
+    assert first == second
+    report = first.native["adaptive_steering"]
+    expected = core.adaptive.ActivationGate("clabs", 0.5, seed=7, clabs=clabs)
+    for step in report["cached_steps"]:
+        decision = expected.step(step["alignment"])
+        assert (step["probability"], step["fired"]) == (decision.probability, decision.fired)
+    assert report["usage"] == {"fired": expected.usage.fired, "eligible": 3}
+    assert learned.native["adaptive_steering"]["effective_strengths"] == [0, -0.125, -0.125, -0.125]
+    assert [step["coefficient"] for step in learned.native["adaptive_steering"]["cached_steps"]] == [0.25] * 3
+    assert fit.training and all(parameter.requires_grad for parameter in fit.parameters())
+
+    def fail_cached(_layer, _args, _logits):
+        if session.binding.network.scale:
+            raise RuntimeError("test failure during a gated native forward")
+        return continue_native(_layer, _args, _logits)
+
+    failing = CachedGate(core=core, layer=0, method="random", parameter=1.0,
+                         intervention="raw_adapter", seed=7, evidence_ref="test fixture")
+    baseline = session.render(strength=0.0, **request)
+    with model.lm_head.register_forward_hook(fail_cached):
+        with pytest.raises(RuntimeError, match="gated native forward"):
+            generate_scheduled(session, steering=failing, strength=0.5, **request)
+    assert session.render(strength=0.0, **request) == baseline
+    assert not model._forward_hooks and not model._forward_pre_hooks
+    assert not any(layer._forward_pre_hooks for layer in model.model.language_model.layers)
+
+
+def test_adaptive_core_rejects_unverified_bytes(tmp_path):
+    from zipfile import ZipFile
+
+    from arete_native_scheduling import load_steering_core
+
+    wheel = tmp_path / "changed.whl"
+    with ZipFile(wheel, "w") as archive:
+        archive.writestr("particle_sliders/adaptive_steering.py", b"X" * 10329)
+    with pytest.raises(ValueError, match="source checksum differs"):
+        load_steering_core(wheel)
