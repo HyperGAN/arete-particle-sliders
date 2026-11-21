@@ -16,6 +16,14 @@ Actual retained pretrained training, exact continuation and finished texts now
 exist; the source-publication CPU snapshot below is historical. Saved research
 factories/exports remain source-bound, not migrated to a new loader by these docs.
 
+For callers of the Python `backend.generate_raw` helper, use
+`arete_particle_sliders.scheduled_text.generate` with the same inputs and an
+additional `step_gains` array of length `max_new_tokens`. The first gain
+scales prompt prefill. Later gains scale single-token cached evaluations.
+The returned receipt ends at the native stop token. Constant-gain parity
+passed on the native Qwen3.5 CPU fixture. Pretrained effect is pending.
+[Shared qualification guide](https://github.com/HyperGAN/particle-sliders/blob/main/docs/strength-schedules.md)
+
 ## CPU architecture fixture
 
 **Experimental source publication.** Random CPU architecture and tokenizer/software fixtures only. Historical installed suite:22 passed. Full pretrained 27B staging/forward/backward/generation/resume, width5120 profile admission, GPU fit and quality remain unqualified.
