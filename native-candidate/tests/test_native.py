@@ -376,6 +376,69 @@ def test_adaptive_clabs_and_psr_edit_native_different_layers(adaptive_setup):
     assert not any(layer._forward_pre_hooks for layer in model.model.language_model.layers)
 
 
+def test_post_block_psr_edits_first_answer_and_cleans_up(adaptive_setup):
+    from arete_native_scheduling import PostBlockPromptSteering
+
+    session, model, core, request = adaptive_setup
+    language = model.model.language_model
+    last_block = language.layers[-1]
+    fit = core.prompt.PromptSteering(16)
+    with torch.no_grad():
+        fit.probe.weight.zero_()
+        fit.probe.bias.fill_(0.25)
+        fit.direction.weight.copy_(torch.arange(16).reshape(1, -1) / 16)
+    policy = PostBlockPromptSteering(core=core, layer=len(language.layers) - 1,
+                                   fitted=fit, evidence_ref="test fixture")
+    original_scale = session.binding.network.scale
+    residuals, logits = [], []
+
+    def record_residual(_norm, args):
+        residuals.append(args[0].detach().clone())
+
+    def fixed_eos(_head, _args, output):
+        logits.append(output.detach().clone())
+        result = output.clone()
+        token = 5 if len(logits) == 1 else model.generation_config.eos_token_id
+        result[..., token] += 100
+        return result
+
+    with language.norm.register_forward_pre_hook(record_residual), model.lm_head.register_forward_hook(fixed_eos):
+        baseline = session.render(strength=0.0, **request)
+        base_residuals, base_logits = residuals[:], logits[:]
+        residuals.clear()
+        logits.clear()
+        dormant = generate_scheduled(session, steering=policy, strength=0.0, **request)
+        assert dormant.native["new_token_ids"] == baseline.native["new_token_ids"]
+        equal(residuals, base_residuals)
+        equal(logits, base_logits)
+        residuals.clear()
+        logits.clear()
+        active = generate_scheduled(session, steering=policy, strength=0.5, **request)
+        assert active.native["new_token_ids"] == baseline.native["new_token_ids"]
+        assert torch.equal(residuals[0][:, :-1], base_residuals[0][:, :-1])
+        assert not torch.equal(logits[0], base_logits[0])
+        for actual, original in zip(residuals, base_residuals, strict=True):
+            expected, _ = fit(original[:, -1:], 0.5)
+            assert torch.equal(actual[:, -1:], expected)
+
+    receipt = active.native["adaptive_steering"]
+    assert receipt["decoder_output_layer"] == len(language.layers) - 1
+    assert receipt["position_scope"] == "answer_only" and "decoder_input_layer" not in receipt
+    assert receipt["effective_strengths"] == [0.125, 0.125]
+    assert [item["output_index"] for item in receipt["answer_steps"]] == [0, 1]
+    assert [item["cache_position"] for item in receipt["answer_steps"]] == [1, 2]
+    assert fit.training and all(parameter.requires_grad for parameter in fit.parameters())
+
+    def fail(_head, _args, _output):
+        raise RuntimeError("fixture failure after the edited first answer residual")
+
+    with model.lm_head.register_forward_hook(fail):
+        with pytest.raises(RuntimeError, match="fixture failure"):
+            generate_scheduled(session, steering=policy, strength=0.5, **request)
+    assert not model._forward_hooks and not model._forward_pre_hooks and not last_block._forward_hooks
+    assert session.binding.network.scale == original_scale
+
+
 def test_adaptive_core_rejects_unverified_bytes(tmp_path):
     from zipfile import ZipFile
 
