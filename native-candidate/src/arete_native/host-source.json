@@ -6,5 +6,5 @@
   "bytes": 9359,
   "sha256": "20757604f4c28a0415e0c9f7dde15e447b956cbcaf118ccf47ff67603197b072",
   "local_file": "host_source.py",
-  "scope": "Exact Qwen3.5 architecture fixture/target walk/chat/lock helpers; old PG094 binding never imported"
+  "scope": "Exact Qwen3.5 architecture fixture/target walk/chat/lock helpers; archived binding never imported"
 }

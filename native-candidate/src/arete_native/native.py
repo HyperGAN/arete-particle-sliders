@@ -79,7 +79,7 @@ class NativeResponse(ARLastHiddenResponseAdapter):
         try:
             super().__init__(_LanguageHost(runtime.model),self.slider,model_identity=identity,
                 checkpoint_modules=tuple(runtime.model.model.language_model.layers)if checkpointing else(),
-                pg_source_profile='release-0.11.0',penalty_input_domain='continuous')
+                pg_source_profile='release-0.11.1',penalty_input_domain='continuous')
         except BaseException as primary:_restore_all([self.slider.close,runtime.close],primary=primary);raise
 
     def _hidden(self,ids):

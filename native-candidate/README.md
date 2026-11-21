@@ -4,7 +4,7 @@ This separate `arete_native` project implements the full native Arete27B
 training/RAW/finished-text route. **Nine distinct tiny native CPU software cases
 are Root-adopted: eight retained passes plus one corrected generation case.**
 Only the failed generation case was run again; the eight passing cases were
-not replayed. [Portable actual evidence](evidence/cpu-nine-distinct-qualification.json)
+not replayed. [Portable actual evidence](https://github.com/HyperGAN/arete-particle-sliders/blob/6ec2e7199c31bfd22876fa6312db02bb388a3180/native-candidate/evidence/cpu-nine-distinct-qualification.json)
 retains both attempts, original artifact names/bytes/SHA256, exact versions and
 scope. Separately retained actual pretrained27B/two-GPU RAW32 execution and native text
 now support a [completed provisional LR comparison](../docs/finished-output-learning-rates.md):
@@ -30,7 +30,7 @@ are used; no older/different model fallback. Only the same304 language attention
 Linears are adapted. Vision, MLPs, embeddings, recurrent/convolution parameters,
 normalizations and output head stay frozen.
 
-Shared core 0.15.1 at `c13890f8e2a1ecf1dc8eb9f2a37f9187cb9fea78` owns the ParticleGAN 0.11.0 game,
+Shared core 0.15.2 at `ec1161f5d74481be3540cb0dfa63d0e8f8b54e90` owns the ParticleGAN 0.11.1 game,
 optimizers, exact FULL/RNG/optimizer restoration and native RAW artifacts. The
 product explicitly declares `penalty_input_domain='continuous'`; the training
 response is the complete final native AR-token5120 state, with the same frozen
@@ -74,17 +74,17 @@ defaults are official recipe defaults, never an optimized Arete claim.
 ## CPU-qualified runtime and native use
 
 `runtime-candidate.json` records the actual CPU-qualified software scope:
-Python3.12/Torch2.9.1/Transformers5.15.0/Accelerate1.15.0, exact core41f/PG0.9.5.
-The [portable evidence](evidence/cpu-nine-distinct-qualification.json) records
+Python3.12/Torch2.9.1/Transformers5.15.0/Accelerate1.15.0, exact core41f / archived ParticleGAN.
+The [portable evidence](https://github.com/HyperGAN/arete-particle-sliders/blob/6ec2e7199c31bfd22876fa6312db02bb388a3180/native-candidate/evidence/cpu-nine-distinct-qualification.json) records
 all actual distribution versions. The original prospective runtime plan is
-retained as a clearly historical [snapshot](evidence/runtime-plan-before-qualification.json).
+retained as a clearly historical [snapshot](https://github.com/HyperGAN/arete-particle-sliders/blob/6ec2e7199c31bfd22876fa6312db02bb388a3180/native-candidate/evidence/runtime-plan-before-qualification.json).
 Use a separate compatible environment; do not upgrade or relabel historical
 prefixes. No old CPU cases/proofs need replaying merely for publication.
-The source validator checks the installed core 0.15.1 API file hashes.
+The source validator checks the installed core 0.15.2 API file hashes.
 Install from this checkout in a fresh Python 3.12 environment.
 
 ```sh
-python -m pip install 'torch==2.9.1' 'particle-sliders-core @ git+https://github.com/HyperGAN/particle-sliders.git@c13890f8e2a1ecf1dc8eb9f2a37f9187cb9fea78#subdirectory=packages/particle-sliders-core' './native-candidate'
+python -m pip install 'torch==2.9.1' 'particle-sliders-core @ git+https://github.com/HyperGAN/particle-sliders.git@ec1161f5d74481be3540cb0dfa63d0e8f8b54e90#subdirectory=packages/particle-sliders-core' './native-candidate'
 ```
 
 This is a public installation recipe, not an instruction to rerun already
