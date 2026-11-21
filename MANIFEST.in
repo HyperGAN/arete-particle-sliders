@@ -3,4 +3,3 @@ recursive-include model-source *.json *.md *.jinja *.txt LICENSE
 recursive-include examples *.json
 recursive-include tools *.py
 recursive-include tests *.py
-recursive-include evidence *.json *.jsonl *.log
