@@ -138,6 +138,9 @@ to prompt prefill. Later gains apply to the cached evaluations, stopping at
 native EOS. The output sidecar records the effective strengths actually used.
 The pretrained effect comparison is pending.
 
+For opt-in activation-dependent generation from the same strict owner, see
+[Arete adaptive strength](../docs/adaptive-strength.md).
+
 The code publication itself is separate from later retained training/measurements.
 Use the [current guide](../docs/finished-output-learning-rates.md) for exact rates,
 source-bound artifact limits, fresh versus restore and completed comparisons.
