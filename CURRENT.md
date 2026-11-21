@@ -1,13 +1,13 @@
 # Native Arete
 
-The separate `arete_native` package installs Particle Sliders core 0.15.1
-and ParticleGAN 0.11.0. It supports full-width 5120 continuous responses and
+The separate `arete_native` package installs Particle Sliders core 0.15.2
+and ParticleGAN 0.11.1. It supports full-width 5120 continuous responses and
 explicit scoped initialization. Use the original source and dependency pins
 for saved checkpoints and exports from earlier cohorts.
 
 **Nine distinct native tiny CPU cases passed:** eight retained at d9f9a4d7 plus
 one corrected finished-generation case at5dfd5459. Old passing cases were not
-rerun. [Portable actual evidence](native-candidate/evidence/cpu-nine-distinct-qualification.json)
+rerun. [Portable actual evidence](https://github.com/HyperGAN/arete-particle-sliders/blob/6ec2e7199c31bfd22876fa6312db02bb388a3180/native-candidate/evidence/cpu-nine-distinct-qualification.json)
 records both closed outcomes, original artifact names/bytes/SHA256, exact
 versions, cases and limits. This is tiny random real-architecture software
 qualification, not full27B/pretrained/actual-twoGPU/quality/LR qualification.

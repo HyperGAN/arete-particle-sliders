@@ -25,7 +25,7 @@ class ContractChecks(unittest.TestCase):
             root=Path(temporary);(root/'config.json').write_text(json.dumps(config));(root/'rows.jsonl').write_text('{}\n{}\n')
             options=dict(model_dir=str(root),training_file=str(root/'rows.jsonl'),placement=placement,
                 source_profile=c.SOURCE_PROFILE,initialization_policy=c.INITIALIZATION_POLICY,
-                pg_version='0.11.0',pg_source_profile='release-0.11.0',penalty_input_domain='continuous',ema_decay=None)
+                pg_version='0.11.1',pg_source_profile='release-0.11.1',penalty_input_domain='continuous',ema_decay=None)
             c.validate_native_options(options,training=True)
             for key,value in [('response_width',256),('ema_decay',.995),('placement',{'kind':'auto'}),('recipe_overrides',{'lr':.001})]:
                 bad=dict(options,**{key:value})
@@ -39,7 +39,7 @@ class ContractChecks(unittest.TestCase):
                 with self.assertRaises(ValueError):c.rate_overrides({key:value})
         for value in(.995,False,0.):
             with self.assertRaises(ValueError):c.validate_profile(dict(ema_decay=value,source_profile=c.SOURCE_PROFILE,
-                initialization_policy=c.INITIALIZATION_POLICY,pg_version='0.11.0',pg_source_profile='release-0.11.0',penalty_input_domain='continuous'))
+                initialization_policy=c.INITIALIZATION_POLICY,pg_version='0.11.1',pg_source_profile='release-0.11.1',penalty_input_domain='continuous'))
         self.assertNotIn('torch',sys.modules);self.assertNotIn('transformers',sys.modules)
 
     def test_native_source_extraction_and_all_new_syntax(self):
@@ -56,7 +56,7 @@ class ContractChecks(unittest.TestCase):
         out=io.StringIO()
         with contextlib.redirect_stdout(out):main(['check'])
         value=json.loads(out.getvalue())
-        self.assertEqual(value['native_width'],5120);self.assertEqual(value['PG'],'0.11.0');self.assertIsNone(value['ema_decay'])
+        self.assertEqual(value['native_width'],5120);self.assertEqual(value['PG'],'0.11.1');self.assertIsNone(value['ema_decay'])
         self.assertFalse(value['pretrained_qualified']);self.assertNotIn('torch',sys.modules)
 
 if __name__=='__main__':unittest.main()

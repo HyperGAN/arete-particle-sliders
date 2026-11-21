@@ -21,7 +21,7 @@ catastrophic guard. That guard measures catastrophic failure, not cheerfulness;
 its pass does not provide formal trait qualification. The earlier RAW2 one-case
 gain0 is a separate checkpoint/budget, not this comparison.
 
-[The portable summary](finished-output-rate.json) preserves all levels, exact
+[The portable summary](https://github.com/HyperGAN/arete-particle-sliders/blob/6ec2e7199c31bfd22876fa6312db02bb388a3180/docs/finished-output-rate.json) preserves all levels, exact
 rates, checkpoint metadata and retained decision/result/guard hashes. Full private
 RAW/FULL files, teacher cache and first-response records are not public downloads
 in this repository. Their identities support scalar arithmetic reproduction;
@@ -30,8 +30,8 @@ this documentation does not bundle an executable pretrained run or release weigh
 ## Actual options and use
 
 The current native project is [native-candidate](../native-candidate/README.md),
-namespace `arete_native95`, PG0.9.5/core0.14.1 at the captured core41f source.
-The root PG0.9.4 CPU fixture remains historical and separate. Add these literal
+namespace `arete_native95`, the archived ParticleGAN release/core0.14.1 at the captured core41f source.
+The root the archived ParticleGAN release CPU fixture remains historical and separate. Add these literal
 members to `options` in a **new, explicitly declared native cohort** based on
 [native-config.json](../native-candidate/examples/native-config.json):
 

@@ -16,7 +16,7 @@ from .data import read_rows
 
 def capabilities(options):
     return ResponseCapabilities('routed_particle_gan','text','native_final_AR_token_hidden','continuous_vector',
-        (1,architecture(options)['response_width']),'0.11.0','release-0.11.0',penalty_input_domain='continuous',
+        (1,architecture(options)['response_width']),'0.11.1','release-0.11.1',penalty_input_domain='continuous',
         base_precisions=('float32','bfloat16'),qualification='New Source; actual native tiny/pretrained qualification not yet run')
 
 
@@ -89,7 +89,7 @@ def validate_inference(options,spec):
     validate_receipt(config['initialization'],cohort=config['initialization'].get('cohort_id'))
     validate_native_options(dict(options,**config['architecture']))
     validate_engine_domain((1,config['architecture']['response_width']),response_domain='continuous_vector',
-        pg_source_profile='release-0.11.0',penalty_input_domain='continuous')
+        pg_source_profile='release-0.11.1',penalty_input_domain='continuous')
 
 
 def preflight_inference(options,request,spec):

@@ -8,7 +8,7 @@ equally weighted garden/coast cases, fixed D0.018000000000000002 / bank0.03.
 Both checkpoints pass their separate catastrophic guards. The trait instrument
 remains provisional (`trait_qualified:false`); no global optimum/default or
 released-weight claim. See [the method and actual API how-to](docs/finished-output-learning-rates.md)
-and [portable choices/evidence hashes](docs/finished-output-rate.json).
+and [portable choices/evidence hashes](https://github.com/HyperGAN/arete-particle-sliders/blob/6ec2e7199c31bfd22876fa6312db02bb388a3180/docs/finished-output-rate.json).
 
 The current [native Arete project](native-candidate/README.md) preserves the
 original full27B/5120 geometry, fresh-only scoped initialization and RAW/noEMA.
@@ -38,8 +38,8 @@ The product adapts only the host-specific architecture and targets. The pinned
 shared core owns the routed HNDL projection, one shared 128×4 particle bank,
 rank8/alpha8 branches, ParticleGAN game, optimizers, checkpoint lifecycle and
 portable inference artifacts. No shared-core code or existing model product was
-modified. The current fixture installs core 0.15.1 at `c13890f8e2a1ecf1dc8eb9f2a37f9187cb9fea78`,
-ParticleGAN 0.11.0, the verified HyperGAN HNDL builder and Transformers 5.15.0.
+modified. The current fixture installs core 0.15.2 at `ec1161f5d74481be3540cb0dfa63d0e8f8b54e90`,
+ParticleGAN 0.11.1, the verified HyperGAN HNDL builder and Transformers 5.15.0.
 
 ## Use the qualified fixture
 
@@ -155,3 +155,5 @@ original notice is retained in `LICENSE` and adaptation details in
 config, generation config, chat template, tokenizer metadata and weight index are
 preserved in `model-source/`; the repository listing contained no separate
 NOTICE file. Model weights and datasets are not redistributed.
+
+Earlier candidate and finished-output evidence remain available in the [archived source](https://github.com/HyperGAN/arete-particle-sliders/tree/6ec2e7199c31bfd22876fa6312db02bb388a3180).

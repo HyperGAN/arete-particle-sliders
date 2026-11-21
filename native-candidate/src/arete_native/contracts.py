@@ -4,7 +4,7 @@ import json
 import math
 from pathlib import Path
 
-CORE_REVISION='c13890f8e2a1ecf1dc8eb9f2a37f9187cb9fea78'
+CORE_REVISION='ec1161f5d74481be3540cb0dfa63d0e8f8b54e90'
 BACKEND='arete_native'
 SOURCE_PROFILE='arete-native5120-engine-explicit-placement-fresh-v1'
 INITIALIZATION_POLICY='arete-kaiming-RMS-QR-zero-up-bank-R2-std1-v1'
@@ -59,7 +59,7 @@ def rate_overrides(options):
 
 def validate_profile(options):
     if(options.get('source_profile'),options.get('initialization_policy'),options.get('pg_version'),
-        options.get('pg_source_profile'),options.get('penalty_input_domain'))!=(SOURCE_PROFILE,INITIALIZATION_POLICY,'0.11.0','release-0.11.0','continuous'):
+        options.get('pg_source_profile'),options.get('penalty_input_domain'))!=(SOURCE_PROFILE,INITIALIZATION_POLICY,'0.11.1','release-0.11.1','continuous'):
         raise ValueError('explicit new Arete native fresh-init/continuous native profile required')
     if 'ema_decay'not in options or options['ema_decay']is not None or options.get('ema')is not None:
         raise ValueError('explicit ema_decay=None required; all weight EMA refused')
@@ -94,6 +94,6 @@ def validate_native_options(options,*,training=False):
 def validate_installed_core():
     from importlib import metadata
     lock=json.loads(Path(__file__).with_name('current_core.json').read_text());dist=metadata.distribution('particle-sliders-core')
-    if dist.version!=lock['version']or lock['commit']!=CORE_REVISION:raise ValueError('exact current core0.15.1 source cohort required')
+    if dist.version!=lock['version']or lock['commit']!=CORE_REVISION:raise ValueError('exact current core0.15.2 source cohort required')
     for name,expected in lock['checked_api_files'].items():
         if file_hash(dist.locate_file('particle_sliders/'+name))!=expected:raise ValueError('current core Source differs:'+name)
