@@ -1,12 +1,12 @@
 # Activation-dependent Arete generation
 
 Use `arete_native_scheduling.generate(session, steering=policy, ...)` on an
-already opened native RAW text-render session. Arete reads the full decoder
-input before attention and before the current edit. Prompt prefill is OFF.
-Each subsequent evaluation of one new input token in the same native KV cache
-advances the controller once. The sidecar includes the actual cache positions,
-coefficients or gate decisions, the realized firing budget and the effective
-strengths through native EOS.
+already opened native RAW text-render session. Cached policies read the decoder
+input before attention and advance once per new input token after prefill.
+Answer-only post-block S-PSR reads the selected decoder block's output and
+starts at the final prompt position, which predicts the first answer token.
+The sidecar records actual cache positions and effective strengths through
+native EOS, along with the coefficients or gate decisions.
 
 ## Shared equations and archived RAW
 
@@ -63,14 +63,16 @@ output.save(output_path)
   routed RAW edit at the supplied unipolar strength in `[0,1]`. This tests the
   paper's allocation equations with the product's edit. It requires its own
   layer-0 probe and qualification.
-- For S-PSR, construct `core.prompt.PromptSteering`, load its fitted RAW
-  state dictionary, and pass the module as
-  `CachedPromptSteering(core=core, layer=layer, fitted=module,
-  evidence_ref=fit_evidence)`. Fit the coefficient and direction jointly on
-  matching Arete response positions under neutral and attribute prompts.
-  Use the shared layer loss and location penalty. Record which layer and
-  coefficient were fitted, and select the signed global strength on
-  calibration cases before evaluation. [PSR equations and training](https://arxiv.org/html/2605.03907v1)
+- For answer-only S-PSR, construct `core.prompt.PromptSteering`, load its
+  fitted state dictionary and pass
+  `PostBlockPromptSteering(core=core, layer=layer, fitted=module,
+  evidence_ref=fit_evidence)`. Fit the probe and direction jointly from
+  matching decoder block outputs under neutral and attribute prompts with
+  the shared layer loss and location penalty. Calibrate the signed global
+  strength on separate cases. The `answer_steps` sidecar records output
+  index zero at the last prompt position. Use `CachedPromptSteering` to
+  replay fits made on decoder inputs after prefill.
+  [PSR equations and training](https://arxiv.org/html/2605.03907v1)
 
 Keep the existing `step_gains` parameter for fixed-schedule replay and select
 one mode per request. Use disjoint calibration and evaluation cases. For CFP

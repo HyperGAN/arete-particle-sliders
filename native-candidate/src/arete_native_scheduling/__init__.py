@@ -5,7 +5,7 @@ from sys import float_info
 
 from arete_native.native import NativeResponse
 
-from .adaptive import CachedGate, CachedPromptSteering, render_adaptive
+from .adaptive import CachedGate, CachedPromptSteering, PostBlockPromptSteering, render_adaptive
 from .steering_core import load_steering_core
 
 

@@ -38,12 +38,17 @@ class CachedPromptSteering:
     evidence_ref: str
 
 
+@dataclass(frozen=True, kw_only=True)
+class PostBlockPromptSteering(CachedPromptSteering):
+    """A caller-fitted S-PSR module on decoder outputs, starting at the first answer."""
+
+
 def render_adaptive(session, native, *, steering, strength, max_new_tokens, **request):
     model = native.native_model
     layers = model.model.language_model.layers
     width = model.config.text_config.hidden_size
     if not isinstance(steering, (CachedGate, CachedPromptSteering)):
-        raise TypeError("Provide CachedGate or CachedPromptSteering")
+        raise TypeError("Provide CachedGate, CachedPromptSteering or PostBlockPromptSteering")
     if (not isinstance(steering.evidence_ref, str) or not steering.evidence_ref.strip()
             or type(steering.layer) is not int or not 0 <= steering.layer < len(layers)):
         raise ValueError("Provide calibration evidence and a native decoder layer index")
@@ -51,6 +56,7 @@ def render_adaptive(session, native, *, steering, strength, max_new_tokens, **re
     core = steering.core
     require_steering_core(core)
     direction = fitted = gate = None
+    post_block = isinstance(steering, PostBlockPromptSteering)
     if isinstance(steering, CachedGate):
         method, intervention = steering.method, steering.intervention
         if intervention not in ("residual", "raw_adapter"):
@@ -83,14 +89,17 @@ def render_adaptive(session, native, *, steering, strength, max_new_tokens, **re
         if (not isinstance(steering.fitted, core.prompt.PromptSteering)
                 or steering.fitted.probe.in_features != width):
             raise ValueError("Provide a fitted shared S-PSR module with the native decoder width")
-        # Accelerate can move a layer's inputs inside its forward wrapper.
-        # The pre-hook edits the actual input device before dispatch.
+        # Place the copy on the residual's actual device inside the hook.
         fitted = deepcopy(steering.fitted).eval().requires_grad_(False)
 
     trace, applied = [], []
     receipt = dict(core_revision=CORE_REVISION, method=method, intervention=intervention,
-                   decoder_input_layer=steering.layer, evidence_ref=steering.evidence_ref,
-                   nominal_strength=strength, cached_steps=trace)
+                   evidence_ref=steering.evidence_ref, nominal_strength=strength)
+    if post_block:
+        receipt.update(decoder_output_layer=steering.layer, position_scope="answer_only",
+                       answer_steps=trace)
+    else:
+        receipt.update(decoder_input_layer=steering.layer, cached_steps=trace)
     if gate is not None:
         receipt.update(parameter=steering.parameter, seed=steering.seed,
                        clabs=asdict(steering.clabs) if steering.clabs is not None else None,
@@ -112,28 +121,31 @@ def render_adaptive(session, native, *, steering, strength, max_new_tokens, **re
             prefix, cache = ids.shape[1], past
         expected_width = 1 if index else prefix
         past_length = prefix + index - expected_width
-        if (index >= max_new_tokens or ids.shape != (1, expected_width)
+        if (index >= max_new_tokens or prefix < 1 or ids.shape != (1, expected_width)
                 or mask.shape != (1, prefix + index) or past is not cache
                 or past.get_seq_length() != past_length):
             raise RuntimeError("Arete adaptive steering saw an unexpected cached position")
+        if post_block and index == 0 and not (mask == 1).all().item():
+            raise RuntimeError("Arete answer-only steering requires an unpadded native prefix")
         position = index
 
-    def before_decoder(_layer, args):
+    def edit_residual(hidden):
         nonlocal position
         if position is None:
             raise RuntimeError("Arete visited the selected decoder layer more than once")
         index, position = position, None
-        if index == 0 or strength == 0:
+        if (index == 0 and not post_block) or strength == 0:
             applied.append(0.0)
             return None
-        hidden = args[0]
-        if hidden.shape != (1, 1, width):
-            raise RuntimeError("Expected one full-width native Arete cached residual")
+        expected = prefix if index == 0 else 1
+        if not isinstance(hidden, torch.Tensor) or hidden.shape != (1, expected, width):
+            raise RuntimeError("Unexpected native Arete decoder residual shape")
+        residual = hidden[:, -1:, :] if index == 0 else hidden
         record = dict(output_index=index, cache_position=prefix + index - 1)
-        edited = hidden
+        edited = residual
         if fitted is not None:
-            fitted.to(device=hidden.device)
-            edited, coefficient = fitted(hidden, strength)
+            fitted.to(device=residual.device)
+            edited, coefficient = fitted(residual, strength)
             effective = (coefficient * strength).item()
             if not isfinite(effective):
                 raise ValueError("Nonfinite Arete S-PSR effective strength")
@@ -141,7 +153,7 @@ def render_adaptive(session, native, *, steering, strength, max_new_tokens, **re
         else:
             score = None
             if method != "random":
-                score = core.adaptive.activation_projection(hidden, direction, strength=strength).item()
+                score = core.adaptive.activation_projection(residual, direction, strength=strength).item()
             decision = gate.step(score)
             effective = strength if decision.fired else 0.0
             record.update(alignment=score, fired=decision.fired, probability=decision.probability)
@@ -149,15 +161,26 @@ def render_adaptive(session, native, *, steering, strength, max_new_tokens, **re
                 scale.enter_context(native.network.scaled(strength))
             if intervention == "residual":
                 edited = core.adaptive.steer_residual(
-                    hidden, direction, strength=strength, gate=decision.fired,
+                    residual, direction, strength=strength, gate=decision.fired,
                     preserve_norm=steering.preserve_norm, projection_bounds=steering.projection_bounds,
                 )
-        if edited is not hidden and not torch.isfinite(edited).all().item():
+        if edited is not residual and not torch.isfinite(edited).all().item():
             raise ValueError("Nonfinite Arete residual after steering")
         record["effective_strength"] = effective
         applied.append(effective)
         trace.append(record)
-        return (edited, *args[1:]) if edited is not hidden else None
+        if edited is residual:
+            return None
+        if index == 0 and prefix > 1:
+            return torch.cat((hidden[:, :-1, :], edited), dim=1)
+        return edited
+
+    def before_decoder(_layer, args):
+        edited = edit_residual(args[0])
+        return (edited, *args[1:]) if edited is not None else None
+
+    def after_decoder(_layer, _args, output):
+        return edit_residual(output)
 
     def after_forward(_model, _args, output):
         scale.close()
@@ -166,7 +189,9 @@ def render_adaptive(session, native, *, steering, strength, max_new_tokens, **re
 
     with native.network.scaled(0.0), ExitStack() as hooks:
         hooks.callback(model.register_forward_pre_hook(before_forward, with_kwargs=True).remove)
-        hooks.callback(layer.register_forward_pre_hook(before_decoder).remove)
+        handle = (layer.register_forward_hook(after_decoder) if post_block
+                  else layer.register_forward_pre_hook(before_decoder))
+        hooks.callback(handle.remove)
         hooks.callback(model.register_forward_hook(after_forward, always_call=True).remove)
         hooks.callback(scale.close)
         output = session.render(strength=0.0, max_new_tokens=max_new_tokens, **request)
