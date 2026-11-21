@@ -40,7 +40,7 @@ members to `options` in a **new, explicitly declared native cohort** based on
 ```
 
 `lr` is G; D is `lr*d_lr_mult`; bank is `lr*prior_lr_mult`. These exact literals
-are passed through `ConditionalPG095(recipe_overrides=...)`, preserving the
+are passed through `ConditionalParticleGAN(recipe_overrides=...)`, preserving the
 shared official objective, penalties and optimizer formula. For the compared
 G0.001 arm the saved literals are0.001/18.0/30.0, giving the same D/bank.
 Do not reconstruct rates from rounded quotients. Set `options.steps=128` for
