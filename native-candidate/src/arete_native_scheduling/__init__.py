@@ -3,14 +3,23 @@
 from contextlib import ExitStack
 from sys import float_info
 
-from arete_native.native import NativeResponse
-
 from .adaptive import CachedGate, CachedPromptSteering, PostBlockPromptSteering, render_adaptive
+from .all_layer import bind_archived_all_layer_session, generate_all_layer, load_all_layer_prompt_steering
 from .steering_core import load_steering_core
+
+
+def __getattr__(name):
+    if name == "NativeResponse":
+        from arete_native.native import NativeResponse
+
+        return NativeResponse
+    raise AttributeError(name)
 
 
 def generate(session, *, step_gains=None, steering=None, strength=1.0, max_new_tokens=128, **request):
     """Render native text with fixed gains or calibrated cached steering."""
+    from arete_native.native import NativeResponse
+
     session._open()
     binding = session.binding
     native = getattr(binding.close, "__self__", None)
