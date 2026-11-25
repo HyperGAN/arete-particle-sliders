@@ -257,6 +257,29 @@ def match_all_layer_constant(adaptive_trace, *, matcher):
                              tuple(match.constant_dose for match in matches), matcher)
 
 
+def _constant_dose_receipt(trace, constant):
+    columns = _effective_prefix(trace)
+    for column, value in zip(columns, constant.strengths, strict=True):
+        if any(gain != value for gain in column):
+            raise ValueError("The native control used a gain other than the matched constant")
+    coordinates = range(len(columns[0]) + 1)
+    observed = tuple(constant.matcher.interval_dose(column, coordinates, coefficient_format="binary32")
+                     for column in columns)
+    complete = trace["eligible_prefix_complete"]
+    if complete and observed != constant.nearest_doses:
+        raise RuntimeError("The observed constant dose differs from the matched control")
+    exact = observed == constant.adaptive_doses if complete else None
+    return dict(
+        core_revision=DOSE_CORE_REVISION, adaptive_trace_sha256=constant.adaptive_trace_sha256,
+        status=("exact" if exact else "nearest_binary32") if complete else "incomplete_prefix",
+        exact_dose_equal=exact,
+        layers=[dict(layer=index, adaptive_dose=str(adaptive), constant_dose=str(rendered),
+                     signed_residual=str(rendered - adaptive), constant_float32_bits=pack(">f", value).hex())
+                for index, (adaptive, rendered, value) in enumerate(zip(
+                    constant.adaptive_doses, observed, constant.strengths, strict=True))],
+    )
+
+
 def generate_all_layer(session, *, steering, strength, max_new_tokens, eligible_tokens=None, case_ref=None, **request):
     """Apply the frozen authored A-PSR on every cached Arete decoder block.
 
@@ -430,21 +453,6 @@ def _generate_all_layer(session, *, steering, strength, max_new_tokens, eligible
         if not complete:
             trace["incomplete_prefix_reason"] = "The native answer ended before the registered prefix"
     if constant is not None:
-        columns = _effective_prefix(trace)
-        coordinates = range(len(columns[0]) + 1)
-        observed = tuple(constant.matcher.interval_dose(column, coordinates, coefficient_format="binary32")
-                         for column in columns)
-        if complete and observed != constant.nearest_doses:
-            raise RuntimeError("The observed constant dose differs from the matched control")
-        exact = observed == constant.adaptive_doses if complete else None
-        trace["dose_comparison"] = dict(
-            core_revision=DOSE_CORE_REVISION, adaptive_trace_sha256=constant.adaptive_trace_sha256,
-            status=("exact" if exact else "nearest_binary32") if complete else "incomplete_prefix",
-            exact_dose_equal=exact,
-            layers=[dict(layer=index, adaptive_dose=str(adaptive), constant_dose=str(rendered),
-                         signed_residual=str(rendered - adaptive), constant_float32_bits=pack(">f", value).hex())
-                    for index, (adaptive, rendered, value) in enumerate(zip(
-                        constant.adaptive_doses, observed, constant.strengths, strict=True))],
-        )
+        trace["dose_comparison"] = _constant_dose_receipt(trace, constant)
     output.native["adaptive_steering"] = trace
     return output

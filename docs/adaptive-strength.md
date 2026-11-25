@@ -156,6 +156,43 @@ An arm that ends before the registered prefix retains its finished text and
 records incomplete support. It cannot establish the matched-prefix comparison.
 EOS after the prefix can occur at different positions in the two arms.
 
+#### Hand finished firsts to the existing Arete observers
+
+Use `arete_native_scheduling.observer_ingress.prepare_blinded_trio` after the
+registered native firsts settle. The caller supplies pinned `path`, `bytes`
+and `sha256` references for the registration and each available arm first,
+plus the same verified dose matcher used to prepare the constant.
+
+The `arete.a_psr.prefix_observer_registration.v1` record binds the expected
+native `prefix_dose_scope` as `scope`, the human-readable `prompt`, the
+registered `adaptive_strength`, `ema_decay=None`, and the registered
+`dose_policy` of `exact` or `nearest_binary32`. Include the original
+`integrity_output_contract` and the existing `observer_binding` containing
+`calibration_plan`, `tone_qualification` and `guarded_calibration` references.
+The handoff pins the adopted v3 plan, qualification result, and guard by size
+and SHA-256. The existing observer guard verifies their bodies in its own
+authorized read scope, including the plan's separate integrity qualification.
+Each of `off`, `adaptive` and `constant` has distinct `claim_path`,
+`first_path`, `text_path`, `native_path` and a preregistered opaque `blind_id`.
+
+The runner writes each `arete.a_psr.prefix_native_intent.v1` before its native
+call, naming the exact `registration` reference, `arm`, `case_ref` and
+`ema_decay=None`. After the original text and native receipt are settled, it
+records the immutable `claim`, `text` and `native` references at `first_path`.
+For OFF use explicit zero on the same registered clock. The handoff verifies
+the resulting native traces and recomputes the constant receipt from actual
+per-layer gains. It retains valid early-EOS and missing-arm cases with
+unmeasured timing.
+
+Pass the projected `tone_bank` rows to the original v3 tone scorer. It masks
+reported wording only in its internal scoring view. Pass `integrity_inputs`
+to the qualified separate whole-text integrity observer. Both reference the
+same untouched finished text. Keep `private` out of the scorer input. Its
+`ready_for_observation` timing status concerns firsts and dose arithmetic.
+The observed outcome still requires the separately guarded instruments.
+Measure the intended effect as the equal-case mean of adaptive tone minus
+matched OFF tone. Keep the categorical catastrophic verdict separate.
+
 Keep the existing `step_gains` parameter for fixed-schedule replay and select
 one mode per request. Use disjoint calibration and evaluation cases. For CFP
 and CLABS, use `core.adaptive.calibrate_gate_budget` on steering-active
