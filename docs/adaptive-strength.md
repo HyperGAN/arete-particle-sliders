@@ -156,6 +156,20 @@ An arm that ends before the registered prefix retains its finished text and
 records incomplete support. It cannot establish the matched-prefix comparison.
 EOS after the prefix can occur at different positions in the two arms.
 
+#### Original fit-only runtime evidence
+
+At the original fit strength of 3/4, the saved 30-update RAW probes ran to
+native EOS at answer token 43. Verification checked all 2,752 binary32
+products across 64 decoder layers. Of these, 1,822 were nonzero and the
+effective gain varied over time in 55 layers.
+
+Nearest-binary32 constant dose arithmetic over the completed answer gave
+exact equality for nine zero-edit layers and a nonzero residual for every
+active layer. A native constant replay, measured development selection and
+held-out gain remain pending. [Fit-only aggregate evidence](arete-fit-only-native-runtime.json) ·
+[Shared A-PSR equations](https://github.com/HyperGAN/particle-sliders/blob/b1f780decc516808cfd3019d5e5b674457161f86/packages/particle-sliders-core/src/particle_sliders/prompt_steering.py) ·
+[Shared binary32 dose matcher](https://github.com/HyperGAN/particle-sliders/blob/c4b3655f43ee9b6e9780bb65766dee0d603cb749/packages/particle-sliders-core/src/particle_sliders/strength_schedule.py).
+
 #### Hand finished firsts to the existing Arete observers
 
 Use `arete_native_scheduling.observer_ingress.prepare_blinded_trio` after the

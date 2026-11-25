@@ -1,0 +1,31 @@
+{
+  "schema": "arete.a_psr.fit_only_native_runtime_evidence.v1",
+  "scope": "original_fit_only",
+  "completed_raw_probe_updates": 30,
+  "ema_decay": null,
+  "original_fit_strength_ratio": [3, 4],
+  "native_eos_at_answer_tokens": 43,
+  "decoder_layers": 64,
+  "checked_binary32_products": 2752,
+  "nonzero_applied_gain_count": 1822,
+  "layers_with_temporal_gain_variation": 55,
+  "nearest_binary32_constant_arithmetic": {
+    "support": "completed_native_answer",
+    "zero_edit_layers_with_exact_dose": 9,
+    "active_layers_with_exact_dose": 0,
+    "native_constant_replays": 0
+  },
+  "development": {
+    "status": "pending",
+    "selected_alpha": null,
+    "selected_prefix": null
+  },
+  "held_out": {
+    "status": "pending",
+    "gain": null
+  },
+  "shared_core": {
+    "prompt_steering": "https://github.com/HyperGAN/particle-sliders/blob/b1f780decc516808cfd3019d5e5b674457161f86/packages/particle-sliders-core/src/particle_sliders/prompt_steering.py",
+    "binary32_interval_dose": "https://github.com/HyperGAN/particle-sliders/blob/c4b3655f43ee9b6e9780bb65766dee0d603cb749/packages/particle-sliders-core/src/particle_sliders/strength_schedule.py"
+  }
+}
