@@ -4,8 +4,11 @@ from contextlib import ExitStack
 from sys import float_info
 
 from .adaptive import CachedGate, CachedPromptSteering, PostBlockPromptSteering, render_adaptive
-from .all_layer import bind_archived_all_layer_session, generate_all_layer, load_all_layer_prompt_steering
-from .steering_core import load_steering_core
+from .all_layer import (
+    bind_archived_all_layer_session, generate_all_layer, generate_all_layer_constant,
+    load_all_layer_prompt_steering, match_all_layer_constant,
+)
+from .steering_core import load_dose_matcher, load_steering_core
 
 
 def __getattr__(name):

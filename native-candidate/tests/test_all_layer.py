@@ -1,7 +1,9 @@
 """CPU fixtures for the full authored A-PSR format and cached answer-only path."""
 
 from contextlib import contextmanager
+from copy import deepcopy
 from dataclasses import asdict
+from fractions import Fraction
 from hashlib import sha256
 from io import BytesIO
 from importlib.util import find_spec
@@ -16,10 +18,11 @@ from unittest.mock import patch
 from zipfile import ZipFile
 
 import torch
-from transformers import DynamicCache, Qwen3_5TextConfig
+from transformers import DynamicCache, GenerationConfig, Qwen3_5TextConfig
 
 from arete_native_scheduling import (
-    bind_archived_all_layer_session, generate_all_layer, load_all_layer_prompt_steering, load_steering_core,
+    bind_archived_all_layer_session, generate_all_layer, generate_all_layer_constant,
+    load_all_layer_prompt_steering, load_dose_matcher, load_steering_core, match_all_layer_constant,
 )
 
 
@@ -46,6 +49,7 @@ class NativeTrace(torch.nn.Module):
         super().__init__()
         self.model = SimpleNamespace(language_model=Decoder())
         self.config = SimpleNamespace(text_config=SimpleNamespace(hidden_size=5120))
+        self.generation_config = GenerationConfig(eos_token_id=2, pad_token_id=0, bos_token_id=1)
         self.trace = []
 
     def forward(self, *, input_ids, attention_mask, past_key_values, use_cache, position_ids):
@@ -111,13 +115,14 @@ class Session:
     def _open(self):
         pass
 
-    def render(self, *, strength, max_new_tokens, **_request):
+    def render(self, *, strength, max_new_tokens, ids=None, seed=0, **_request):
         assert strength == 0
         model = self.owner.native_model
         config = Qwen3_5TextConfig(num_hidden_layers=64,
                                    layer_types=(["linear_attention"] * 3 + ["full_attention"]) * 16)
         cache = DynamicCache(config=config)
-        ids = torch.tensor([[1, 2, 3]])
+        ids = torch.tensor([ids if ids is not None else [1, 2, 3]])
+        prompt_tokens = ids.shape[1]
         mask = torch.ones_like(ids)
         tokens = []
         with self.owner.network.scaled(strength):
@@ -135,8 +140,9 @@ class Session:
                     break
                 ids = torch.tensor([[token]])
         return SimpleNamespace(text=str(tokens), native=dict(
-            new_token_ids=tokens, prompt_tokens=3, selection="raw", weight_EMA=None,
-            enable_thinking=False, native_eos_token_id=2,
+            new_token_ids=tokens, prompt_tokens=prompt_tokens, selection="raw", weight_EMA=None,
+            enable_thinking=False, native_eos_token_id=2, seed=seed,
+            actual_generate_kwargs=dict(max_new_tokens=max_new_tokens),
         ))
 
 
@@ -163,7 +169,13 @@ class AllLayer(unittest.TestCase):
                     out.write(root / name, f"particle_sliders/{name}")
         cls.core = load_steering_core(wheel)
 
-    def owned_binding(self, *, ema=None, invalid=None, devices=None, base=None):
+    def dose_matcher(self):
+        wheel = os.getenv("ARETE_DOSE_CORE_WHEEL")
+        if not wheel:
+            self.skipTest("Set ARETE_DOSE_CORE_WHEEL to a wheel containing the pinned dose source")
+        return load_dose_matcher(wheel)
+
+    def owned_binding(self, *, ema=None, invalid=None, devices=None, base=None, completed=15):
         if base is None:
             base = dict(selection="raw", origin={"completed_steps": 8}, sha256="a" * 64)
         base = packet(base)
@@ -185,7 +197,7 @@ class AllLayer(unittest.TestCase):
         if invalid:
             state[invalid][0] = float("nan")
         raw = packet(dict(
-            schema="arete.authored_APSR.raw_probe_checkpoint.v1", cursor={"completed": 15},
+            schema="arete.authored_APSR.raw_probe_checkpoint.v1", cursor={"completed": completed},
             raw=state, exact_full_first={"sha256": "b" * 64}, ema_decay=ema,
             provenance=dict(plan=reference(plan), exact_RAW8=base_ref, measured_no_update=measured),
         ))
@@ -259,6 +271,130 @@ class AllLayer(unittest.TestCase):
             self.assertFalse(model._forward_pre_hooks or model._forward_hooks)
             self.assertTrue(all(not layer._forward_hooks for layer in model.model.language_model.layers))
 
+    def test_exact_prefix_dose_preserves_distinct_native_eos(self):
+        matcher = self.dose_matcher()
+        steering, raw = load_all_layer_prompt_steering(**self.owned_binding())
+        owner = NativeOwner()
+        request = dict(steering=steering, case_ref="registered", max_new_tokens=5, ids=[1, 2, 3], seed=31)
+        with patch("arete_native_scheduling.all_layer.import_module", return_value=SimpleNamespace(NativeResponse=NativeOwner)):
+            adaptive = generate_all_layer(Session(owner, raw["sha256"], eos_after=5),
+                                          strength=.5, eligible_tokens=2, **request)
+            trace = adaptive.native["adaptive_steering"]
+            plan = match_all_layer_constant(trace, matcher=matcher)
+            owner.native_model.trace.clear()
+            control = generate_all_layer_constant(Session(owner, raw["sha256"], eos_after=4),
+                                                   constant=plan, **request)
+        report = control.native["adaptive_steering"]
+        self.assertEqual(report["prefix_dose_scope"], trace["prefix_dose_scope"])
+        self.assertEqual(adaptive.native["new_token_ids"], [8, 8, 7, 7, 2])
+        self.assertEqual(control.native["new_token_ids"], [8, 8, 7, 2])
+        self.assertEqual([row["cache_position"] for row in report["answer_steps"]], [2, 3, 4, 5])
+        for arm in (trace, report):
+            self.assertTrue(arm["eligible_prefix_complete"])
+            self.assertTrue(all(step["effective_strength_float32_bits"] == ["00000000"] * 64
+                                for step in arm["answer_steps"][2:]))
+        comparison = report["dose_comparison"]
+        self.assertEqual(comparison["status"], "exact")
+        self.assertTrue(comparison["exact_dose_equal"])
+        self.assertEqual(len(comparison["layers"]), 64)
+        self.assertEqual(comparison["layers"][0]["constant_dose"], "1/4")
+        self.assertTrue(all(row["signed_residual"] == "0" for row in comparison["layers"]))
+        self.assertEqual(owner.native_model.trace[0][0, -1, 0].item(), .1875)
+        self.assertTrue(all(not step[..., 0].any() for step in owner.native_model.trace[2:]))
+        self.assertEqual(owner.network.scale, .75)
+
+    def test_nearest_binary32_reports_exact_signed_nonrepresentable_dose(self):
+        matcher = self.dose_matcher()
+        steering, raw = load_all_layer_prompt_steering(**self.owned_binding())
+        owner = NativeOwner()
+        with torch.no_grad():
+            steering.probes[0].probe.bias.zero_()
+            steering.probes[0].probe.weight[0, 1] = 1
+        request = dict(steering=steering, case_ref="registered", max_new_tokens=4)
+        with patch("arete_native_scheduling.all_layer.import_module", return_value=SimpleNamespace(NativeResponse=NativeOwner)):
+            adaptive = generate_all_layer(Session(owner, raw["sha256"], eos_after=4),
+                                          strength=-.5, eligible_tokens=3, **request)
+            trace = adaptive.native["adaptive_steering"]
+            self.assertEqual([observed(step["effective_strength_float32_bits"][0]) for step in trace["answer_steps"]],
+                             [-1.5, -3.5, -3.5, 0])
+            plan = match_all_layer_constant(trace, matcher=matcher)
+            control = generate_all_layer_constant(Session(owner, raw["sha256"], eos_after=4),
+                                                   constant=plan, **request)
+        comparison = control.native["adaptive_steering"]["dose_comparison"]
+        self.assertEqual(comparison["status"], "nearest_binary32")
+        self.assertFalse(comparison["exact_dose_equal"])
+        layer = comparison["layers"][0]
+        self.assertEqual(layer["adaptive_dose"], "-17/2")
+        self.assertEqual(Fraction(layer["constant_dose"]), Fraction(observed(layer["constant_float32_bits"])) * 3)
+        self.assertEqual(Fraction(layer["signed_residual"]), Fraction(layer["constant_dose"]) + Fraction(17, 2))
+        self.assertNotEqual(layer["signed_residual"], "0")
+
+    def test_early_eos_preserves_both_finished_outputs_and_marks_incomplete_support(self):
+        matcher = self.dose_matcher()
+        steering, raw = load_all_layer_prompt_steering(**self.owned_binding())
+        owner = NativeOwner()
+        request = dict(steering=steering, case_ref="registered", max_new_tokens=4)
+        with patch("arete_native_scheduling.all_layer.import_module", return_value=SimpleNamespace(NativeResponse=NativeOwner)):
+            partial = generate_all_layer(Session(owner, raw["sha256"], eos_after=2),
+                                         strength=.5, eligible_tokens=3, **request)
+            trace = partial.native["adaptive_steering"]
+            self.assertEqual(partial.text, "[8, 2]")
+            self.assertFalse(trace["eligible_prefix_complete"])
+            self.assertIn("ended before", trace["incomplete_prefix_reason"])
+            with self.assertRaisesRegex(ValueError, "ended before"):
+                match_all_layer_constant(trace, matcher=matcher)
+            adaptive = generate_all_layer(Session(owner, raw["sha256"], eos_after=4),
+                                          strength=.5, eligible_tokens=3, **request)
+            plan = match_all_layer_constant(adaptive.native["adaptive_steering"], matcher=matcher)
+            control = generate_all_layer_constant(Session(owner, raw["sha256"], eos_after=2),
+                                                   constant=plan, **request)
+        self.assertEqual(control.text, "[8, 2]")
+        receipt = control.native["adaptive_steering"]
+        self.assertFalse(receipt["eligible_prefix_complete"])
+        self.assertEqual(receipt["dose_comparison"]["status"], "incomplete_prefix")
+        self.assertIsNone(receipt["dose_comparison"]["exact_dose_equal"])
+        self.assertEqual(receipt["dose_comparison"]["layers"][0]["signed_residual"], "-1/8")
+
+    def test_prefix_control_refuses_changed_identity_and_cleans_up(self):
+        matcher = self.dose_matcher()
+        steering, raw = load_all_layer_prompt_steering(**self.owned_binding())
+        changed, _ = load_all_layer_prompt_steering(**self.owned_binding(completed=16))
+        owner = NativeOwner()
+        request = dict(steering=steering, ids=[1, 2, 3], seed=12, case_ref="registered", max_new_tokens=4)
+        model = owner.native_model
+        with patch("arete_native_scheduling.all_layer.import_module", return_value=SimpleNamespace(NativeResponse=NativeOwner)):
+            adaptive = generate_all_layer(Session(owner, raw["sha256"], eos_after=4),
+                                          strength=0., eligible_tokens=2, **request)
+            trace = adaptive.native["adaptive_steering"]
+            tampered = deepcopy(trace)
+            tampered["answer_steps"][2]["effective_strength_float32_bits"][0] = "3f800000"
+            with self.assertRaisesRegex(ValueError, "nonzero edit outside"):
+                match_all_layer_constant(tampered, matcher=matcher)
+            tampered = deepcopy(trace)
+            tampered["prefix_dose_scope"]["authored_probe_sha256"] = "0" * 64
+            with self.assertRaisesRegex(ValueError, "RAW provenance differ"):
+                match_all_layer_constant(tampered, matcher=matcher)
+            plan = match_all_layer_constant(trace, matcher=matcher)
+            model.trace.clear()
+            for changes, message in (
+                (dict(ids=[1, 2, 4]), "native case, prompt, RAW, or clock"),
+                (dict(steering=changed), "native case, prompt, RAW, or clock"),
+                (dict(seed=13), "native case, prompt, RAW, or clock"),
+                (dict(max_new_tokens=5), "native case, prompt, RAW, or clock"),
+                (dict(case_ref="other"), "exact registered case"),
+            ):
+                with self.subTest(changes=tuple(changes)), self.assertRaisesRegex(ValueError, message):
+                    generate_all_layer_constant(Session(owner, raw["sha256"]), constant=plan,
+                                                **(request | changes))
+                self.assertEqual(model.trace, [])
+                self.assertEqual(owner.network.scale, .75)
+                self.assertFalse(model._forward_pre_hooks or model._forward_hooks)
+                self.assertTrue(all(not layer._forward_hooks for layer in model.model.language_model.layers))
+            control = generate_all_layer_constant(Session(owner, raw["sha256"], eos_after=4),
+                                                   constant=plan, **request)
+        self.assertEqual(control.native["new_token_ids"], adaptive.native["new_token_ids"])
+        self.assertTrue(all(not step[..., 0].any() for step in model.trace))
+
     @unittest.skipUnless(find_spec("arete_native95"), "Requires the retained archived native owner")
     def test_exact_archived_bridge_owns_existing_restore_and_render_context(self):
         from arete_native95.contracts import PROTOCOL
@@ -305,11 +441,21 @@ class AllLayer(unittest.TestCase):
               patch("arete_native95.finished_text.generate", side_effect=lambda native, **kw: fixture.render(**kw))):
             session = bind_archived_all_layer_session(owner, base_packet=decoded_base,
                                                       check=lambda: checks.append(True), render_context=aligned_text_device)
-            result = generate_all_layer(session, steering=steering, strength=.5, max_new_tokens=3)
+            result = generate_all_layer(session, steering=steering, strength=.5, max_new_tokens=3,
+                                        eligible_tokens=2, case_ref="archived")
             self.assertEqual(result.native["new_token_ids"], [8, 2])
-            self.assertEqual(len(result.native["adaptive_steering"]["answer_steps"]), 2)
+            trace = result.native["adaptive_steering"]
+            self.assertTrue(trace["eligible_prefix_complete"])
+            self.assertEqual(len(trace["answer_steps"]), 2)
             self.assertEqual([step[1:] for step in steps], [((1, 3), (1, 3)), ((1, 1), (1, 4))])
             self.assertIs(steps[0][0], steps[1][0])
+            dose_wheel = os.getenv("ARETE_DOSE_CORE_WHEEL")
+            if dose_wheel:
+                constant = match_all_layer_constant(trace, matcher=load_dose_matcher(dose_wheel))
+                result = generate_all_layer_constant(session, steering=steering, constant=constant,
+                                                     case_ref="archived", max_new_tokens=3)
+                self.assertEqual(result.native["new_token_ids"], [8, 2])
+                self.assertEqual(result.native["adaptive_steering"]["dose_comparison"]["status"], "exact")
             self.assertEqual(owner.network.scale, .75)
             self.assertFalse(owner.network._activation_stack or owner.native_model._forward_pre_hooks)
             self.assertGreaterEqual(len(checks), 3)
