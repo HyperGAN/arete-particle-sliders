@@ -115,6 +115,47 @@ each block output untouched and records zero effective strengths with null
 coefficients. The caller supplies the calibrated strength and the separately
 registered evaluation request.
 
+#### Compare timing over a registered answer prefix
+
+Use the same registered case, prompt, native seed, token budget and eligible
+answer prefix for both arms. Calibrate on a separate split with that same
+prefix. The final prefill position predicts the first generated token and
+counts as the first eligible position. Both arms retain native EOS and apply
+zero steering after the registered prefix.
+
+```python
+from arete_native_scheduling import (
+    generate_all_layer, generate_all_layer_constant, load_dose_matcher,
+    match_all_layer_constant,
+)
+
+matcher = load_dose_matcher(current_shared_core_wheel)
+request = dict(ids=prompt_ids, seed=seed, max_tokens=registered_context_limit,
+               max_new_tokens=registered_token_budget, case_ref=registered_case)
+adaptive = generate_all_layer(
+    session, steering=steering, strength=calibrated_strength,
+    eligible_tokens=registered_answer_prefix, **request,
+)
+trace = adaptive.native["adaptive_steering"]
+if trace["eligible_prefix_complete"]:
+    constant = match_all_layer_constant(trace, matcher=matcher)
+    control = generate_all_layer_constant(session, steering=steering, constant=constant, **request)
+```
+
+The matcher verifies the `strength_schedule.py` source from the [shared core
+revision](https://github.com/HyperGAN/particle-sliders/commit/c4b3655f43ee9b6e9780bb65766dee0d603cb749).
+The earlier steering wheel still loads the original A-PSR equations. Each
+constant uses the nearest representable binary32 gain on its own fixed layer
+direction. The receipt records the exact signed adaptive and rendered
+constant doses, and the constant-minus-adaptive residual for each layer.
+`exact_dose_equal` reports equality across all layers after replay. A
+`nearest_binary32` result has a nonzero residual. Coefficient dose is measured
+before the residual is rounded to BF16.
+
+An arm that ends before the registered prefix retains its finished text and
+records incomplete support. It cannot establish the matched-prefix comparison.
+EOS after the prefix can occur at different positions in the two arms.
+
 Keep the existing `step_gains` parameter for fixed-schedule replay and select
 one mode per request. Use disjoint calibration and evaluation cases. For CFP
 and CLABS, use `core.adaptive.calibrate_gate_budget` on steering-active

@@ -3,18 +3,20 @@
 from contextlib import ExitStack
 from copy import deepcopy
 from dataclasses import dataclass
+from fractions import Fraction
 from hashlib import sha256
 from importlib import import_module
 from io import BytesIO
 import json
+from math import isfinite
 import re
-from struct import pack
+from struct import pack, unpack
 from sys import float_info
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
 import torch
 
-from .steering_core import CORE_REVISION, require_steering_core
+from .steering_core import CORE_REVISION, DOSE_CORE_REVISION, require_dose_matcher, require_steering_core
 
 
 _RAW_PROBE = "arete.authored_APSR.raw_probe_checkpoint.v1"
@@ -42,6 +44,22 @@ class _ArchivedAllLayerSession:
     _open: object
     render: object
     selection = "raw"
+
+
+@dataclass(frozen=True)
+class _AllLayerConstant:
+    case_ref: str
+    eligible_tokens: int
+    scope_sha256: str
+    adaptive_trace_sha256: str
+    strengths: tuple[float, ...]
+    adaptive_doses: tuple[Fraction, ...]
+    nearest_doses: tuple[Fraction, ...]
+    matcher: ModuleType
+
+
+def _digest(value):
+    return sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
 
 
 def _require_sha(value):
@@ -181,21 +199,97 @@ def _owned_native(session):
     return native
 
 
-def generate_all_layer(session, *, steering, strength, max_new_tokens, **request):
+def _effective_prefix(trace):
+    scope = trace.get("prefix_dose_scope")
+    if not isinstance(scope, dict):
+        raise ValueError("Use a registered native answer prefix for dose matching")
+    eligible, budget = scope.get("eligible_tokens"), scope.get("max_new_tokens")
+    rows, prefix = trace.get("answer_steps"), trace.get("prefix_tokens")
+    case_ref = scope.get("case_ref")
+    if (not isinstance(case_ref, str) or not case_ref.strip()
+            or type(eligible) is not int or type(budget) is not int or not 1 <= eligible <= budget <= 4096
+            or type(prefix) is not int or prefix < 1 or scope.get("prompt_tokens") != prefix
+            or not isinstance(rows, list) or not 1 <= len(rows) <= budget
+            or trace.get("eligible_prefix_complete") is not (len(rows) >= eligible)):
+        raise ValueError("Invalid native answer clock or prefix completion")
+    _require_sha(scope.get("prompt_ids_sha256"))
+    identities = ("base_raw_sha256", "base_packet_sha256", "authored_probe_sha256", "authored_plan_sha256")
+    if any(_require_sha(scope.get(name)) != trace.get(name) for name in identities):
+        raise ValueError("The recorded prefix and RAW provenance differ")
+    prefix_rows = []
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            raise ValueError("Invalid native per-layer gain trace")
+        bits = row.get("effective_strength_float32_bits")
+        if (row.get("output_index") != index or row.get("cache_position") != prefix + index - 1
+                or not isinstance(bits, list) or len(bits) != _LAYER_COUNT
+                or any(not isinstance(bits_value, str) or re.fullmatch(r"[a-f0-9]{8}", bits_value) is None
+                       for bits_value in bits)):
+            raise ValueError("Invalid native per-layer gain trace")
+        values = tuple(unpack(">f", bytes.fromhex(bits_value))[0] for bits_value in bits)
+        if not all(map(isfinite, values)) or (index >= eligible and any(values)):
+            raise ValueError("Nonfinite native gain or nonzero edit outside the registered prefix")
+        if index < eligible:
+            prefix_rows.append(values)
+    return tuple(zip(*prefix_rows, strict=True))
+
+
+def match_all_layer_constant(adaptive_trace, *, matcher):
+    """Build the nearest binary32 constant per native decoder direction.
+
+    Pass ``output.native['adaptive_steering']`` from a completed registered prefix.
+    Matching uses the signed effective gains on unit answer-position intervals.
+    """
+    require_dose_matcher(matcher)
+    if (not isinstance(adaptive_trace, dict) or adaptive_trace.get("method") != "a_psr"
+            or adaptive_trace.get("raw_only") is not True or adaptive_trace.get("ema_decay", False) is not None
+            or adaptive_trace.get("decoder_output_layers") != list(range(_LAYER_COUNT))):
+        raise ValueError("Expected a native RAW all-layer adaptive trace")
+    columns = _effective_prefix(adaptive_trace)
+    if not adaptive_trace["eligible_prefix_complete"]:
+        raise ValueError("The adaptive answer ended before the registered prefix")
+    scope = adaptive_trace["prefix_dose_scope"]
+    coordinates = range(scope["eligible_tokens"] + 1)
+    matches = tuple(matcher.match_binary32_interval_dose(column, coordinates) for column in columns)
+    return _AllLayerConstant(scope["case_ref"], scope["eligible_tokens"], _digest(scope), _digest(adaptive_trace),
+                             tuple(match.constant_strength for match in matches),
+                             tuple(match.adaptive_dose for match in matches),
+                             tuple(match.constant_dose for match in matches), matcher)
+
+
+def generate_all_layer(session, *, steering, strength, max_new_tokens, eligible_tokens=None, case_ref=None, **request):
     """Apply the frozen authored A-PSR on every cached Arete decoder block.
 
     Strength is explicit. The returned trace records the actual per-layer FP32
-    factors at each generated answer position. This function does no calibration.
+    factors at each generated answer position. Opt in to a registered prefix with
+    ``eligible_tokens`` and ``case_ref``. This function does no calibration.
     """
-    if not isinstance(steering, _AllLayerBinding):
-        raise ValueError("Load the exact authored A-PSR and base artifacts first")
     if type(strength) not in (float, int) or not -float_info.max <= strength <= float_info.max:
         raise ValueError("Provide an explicit finite A-PSR strength")
-    strength = float(strength)
+    return _generate_all_layer(session, steering=steering, strength=float(strength), max_new_tokens=max_new_tokens,
+                               eligible_tokens=eligible_tokens, case_ref=case_ref, constant=None, request=request)
+
+
+def generate_all_layer_constant(session, *, steering, constant, case_ref, max_new_tokens, **request):
+    """Replay a matched constant over the same native answer prefix and RAW owner."""
+    if not isinstance(constant, _AllLayerConstant) or case_ref != constant.case_ref:
+        raise ValueError("Match the constant on this exact registered case first")
+    return _generate_all_layer(session, steering=steering, strength=None, max_new_tokens=max_new_tokens,
+                               eligible_tokens=constant.eligible_tokens, case_ref=case_ref,
+                               constant=constant, request=request)
+
+
+def _generate_all_layer(session, *, steering, strength, max_new_tokens, eligible_tokens, case_ref, constant, request):
+    if not isinstance(steering, _AllLayerBinding):
+        raise ValueError("Load the exact authored A-PSR and base artifacts first")
     if request.get("enable_thinking", False) is not False:
         raise ValueError("Authored answer-only A-PSR requires native thinking disabled")
     if type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 4096:
         raise ValueError("Require the original native token-budget domain")
+    if ((eligible_tokens is None and case_ref is not None)
+            or (eligible_tokens is not None and (type(eligible_tokens) is not int
+                or not 1 <= eligible_tokens <= max_new_tokens or not isinstance(case_ref, str) or not case_ref.strip()))):
+        raise ValueError("Provide a finite registered answer prefix and nonempty case reference")
     native = _owned_native(session)
     if session.manifest.get("sha256") != steering.base_packet_sha256:
         raise ValueError("This owner does not contain the exact original RAW8 packet")
@@ -215,7 +309,17 @@ def generate_all_layer(session, *, steering, strength, max_new_tokens, **request
     if actual != steering.layer_devices:
         raise ValueError("Native layer placement differs from the exact authored plan")
 
-    probes = deepcopy(steering.probes) if strength else None
+    artifacts = dict(base_raw_sha256=steering.base_file_sha256, base_packet_sha256=steering.base_packet_sha256,
+                     authored_probe_sha256=steering.probe_sha256, authored_plan_sha256=steering.plan_sha256,
+                     completed_authored_updates=steering.completed_updates)
+    scope = None
+    if eligible_tokens is not None:
+        scope = dict(case_ref=case_ref, eligible_tokens=eligible_tokens, max_new_tokens=max_new_tokens,
+                     max_tokens=request.get("max_tokens", 4096), seed=request.get("seed", 0),
+                     owner=type(native).__module__, native_model_sha256=_digest(native.model_identity),
+                     generation_config_sha256=_digest(model.generation_config.to_dict()),
+                     layer_devices=[str(device) for device in actual], **artifacts)
+    probes = deepcopy(steering.probes) if strength or (constant is not None and any(constant.strengths)) else None
     answer_steps = []
     prefix = cache = None
     visited = None
@@ -236,6 +340,11 @@ def generate_all_layer(session, *, steering, strength, max_new_tokens, **request
                 or past.get_seq_length() != prefix + token_index - count
                 or (token_index == 0 and not bool((mask == 1).all()))):
             raise RuntimeError("Unexpected native answer or cache position")
+        if token_index == 0 and scope is not None:
+            scope["prompt_ids_sha256"] = _digest(ids[0].tolist())
+            scope["prompt_tokens"] = prefix
+            if constant is not None and constant.scope_sha256 != _digest(scope):
+                raise ValueError("Constant control does not match the native case, prompt, RAW, or clock")
         visited = []
 
     def edit_block(index):
@@ -246,18 +355,29 @@ def generate_all_layer(session, *, steering, strength, max_new_tokens, **request
                     or hidden.shape != (1, positions, _WIDTH) or hidden.dtype != torch.bfloat16
                     or hidden.device != actual[index]):
                 raise RuntimeError("Unexpected Arete BF16 post-block visit or device placement")
-            if strength == 0:
+            if probes is None or (eligible_tokens is not None and token_index >= eligible_tokens):
                 visited.append(None)
                 return None
 
             residual = hidden[:, -1:, :] if token_index == 0 else hidden
-            probe = probes[index].to(device=residual.device)
-            edited, coefficient = probe(residual, strength)
-            # This exactly mirrors the FP32 product used by shared PromptSteering.forward.
-            effective = coefficient * coefficient.new_tensor(strength)
-            if not bool(torch.isfinite(effective).all() and torch.isfinite(edited).all()):
-                raise ValueError("An authored layer produced a nonfinite coefficient or residual")
-            visited.append((coefficient.item(), effective.item()))
+            if constant is None:
+                probe = probes[index].to(device=residual.device)
+                edited, coefficient = probe(residual, strength)
+                # This exactly mirrors the FP32 product used by shared PromptSteering.forward.
+                effective = coefficient * coefficient.new_tensor(strength)
+                if not bool(torch.isfinite(effective).all()):
+                    raise ValueError("An authored layer produced a nonfinite coefficient")
+                visited.append((coefficient.item(), effective.item()))
+            else:
+                effective = constant.strengths[index]
+                if effective == 0:
+                    visited.append(None)
+                    return None
+                direction = probes[index].direction.weight[0].to(device=residual.device)
+                edited = (residual.float() + effective * direction).to(residual.dtype)
+                visited.append((None, effective))
+            if not bool(torch.isfinite(edited).all()):
+                raise ValueError("An authored layer produced a nonfinite residual")
             if token_index == 0 and prefix > 1:
                 return torch.cat((hidden[:, :-1, :], edited), dim=1)
             return edited
@@ -274,7 +394,8 @@ def generate_all_layer(session, *, steering, strength, max_new_tokens, **request
             raise RuntimeError("A native answer step replaced or misadvanced the cache")
         answer_steps.append(dict(
             output_index=token_index, cache_position=prefix + token_index - 1,
-            coefficient_float32_bits=[None if pair is None else pack(">f", pair[0]).hex() for pair in visited],
+            coefficient_float32_bits=[None if pair is None or pair[0] is None else pack(">f", pair[0]).hex()
+                                      for pair in visited],
             effective_strength_float32_bits=[
                 "00000000" if pair is None else pack(">f", pair[1]).hex() for pair in visited],
         ))
@@ -292,12 +413,38 @@ def generate_all_layer(session, *, steering, strength, max_new_tokens, **request
             or output.native["selection"] != "raw" or output.native["weight_EMA"] is not None
             or output.native["enable_thinking"] is not False):
         raise RuntimeError("The A-PSR trace does not bind each native answer token")
-    output.native["adaptive_steering"] = dict(
-        core_revision=CORE_REVISION, method="a_psr", intervention="residual", position_scope="answer_only",
+    trace = dict(
+        core_revision=CORE_REVISION, method="a_psr" if constant is None else "a_psr_constant",
+        intervention="residual", position_scope="answer_only",
         decoder_output_layers=list(range(_LAYER_COUNT)), nominal_strength=strength,
         prefix_tokens=prefix, answer_steps=answer_steps, raw_only=True, ema_decay=None,
-        base_raw_sha256=steering.base_file_sha256, base_packet_sha256=steering.base_packet_sha256,
-        authored_probe_sha256=steering.probe_sha256, authored_plan_sha256=steering.plan_sha256,
-        completed_authored_updates=steering.completed_updates, evidence_ref=steering.evidence_ref,
+        **artifacts, evidence_ref=steering.evidence_ref,
     )
+    if scope is not None:
+        native_policy = output.native.get("explicit_generation_config", output.native.get("actual_generate_kwargs"))
+        if (output.native.get("seed") != scope["seed"] or not isinstance(native_policy, dict)
+                or native_policy.get("max_new_tokens") != max_new_tokens):
+            raise RuntimeError("The finished text does not bind the registered native seed and token budget")
+        complete = len(answer_steps) >= eligible_tokens
+        trace.update(prefix_dose_scope=scope, eligible_prefix_complete=complete)
+        if not complete:
+            trace["incomplete_prefix_reason"] = "The native answer ended before the registered prefix"
+    if constant is not None:
+        columns = _effective_prefix(trace)
+        coordinates = range(len(columns[0]) + 1)
+        observed = tuple(constant.matcher.interval_dose(column, coordinates, coefficient_format="binary32")
+                         for column in columns)
+        if complete and observed != constant.nearest_doses:
+            raise RuntimeError("The observed constant dose differs from the matched control")
+        exact = observed == constant.adaptive_doses if complete else None
+        trace["dose_comparison"] = dict(
+            core_revision=DOSE_CORE_REVISION, adaptive_trace_sha256=constant.adaptive_trace_sha256,
+            status=("exact" if exact else "nearest_binary32") if complete else "incomplete_prefix",
+            exact_dose_equal=exact,
+            layers=[dict(layer=index, adaptive_dose=str(adaptive), constant_dose=str(rendered),
+                         signed_residual=str(rendered - adaptive), constant_float32_bits=pack(">f", value).hex())
+                    for index, (adaptive, rendered, value) in enumerate(zip(
+                        constant.adaptive_doses, observed, constant.strengths, strict=True))],
+        )
+    output.native["adaptive_steering"] = trace
     return output
