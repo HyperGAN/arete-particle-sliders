@@ -213,6 +213,39 @@ The observed outcome still requires the separately guarded instruments.
 Measure the intended effect as the equal-case mean of adaptive tone minus
 matched OFF tone. Keep the categorical catastrophic verdict separate.
 
+#### Read development evidence and freeze alpha
+
+In the authorized downstream CPU process, use
+`arete_native_scheduling.development_evidence` with the current shared core.
+`read_prefix_development_case` joins the original guarded
+`blinded-firsts.json` and `guard-terminal.json` with the registered native
+firsts. It checks the v3 tone call's blind ID and full-text reference, and the
+separate integrity call's complete-text content, contract and qualified
+profile. Pass the exact guarded artifacts so the reader can verify their
+chronology and identity.
+
+The independent `arete.a_psr.prefix_development_registration.v1` declares
+`case_role="development"`, `ema_decay=None`, the exact `case_ids`, and
+`trials` containing each measured candidate `alpha` and its mapping of case
+IDs to pinned `registrations`. Register the full grid before any native arm
+enters. The caller establishes case custody before registration.
+
+`reduce_prefix_development(panel_ref, evidence, matcher=matcher)` consumes
+`evidence[alpha][case_id]` with `native_firsts`, `blinded_firsts` and
+`guard_terminal` references. Missing pairs stay unmeasured. The shared
+`matched_effect_mean` computes intensity over the complete declared roster.
+The receipt retains measured intensity when the timing or integrity status
+prevents selection. Matched constant has a separate status and mean. The
+reader uses the registered RAW identity in the receipts and operates on
+settled observer evidence. [Shared reducer in core PR #336](https://github.com/HyperGAN/particle-sliders/pull/336) ·
+[Exact merged core source](https://github.com/HyperGAN/particle-sliders/blob/637880b9b40a231a16f2e02ad384738052eca6e0/packages/particle-sliders-core/src/particle_sliders/alpha_search.py).
+
+`freeze_prefix_development(panel_ref, evidence, output_path, matcher=matcher)`
+writes an exclusive first receipt for a unique eligible alpha with positive
+measured adaptive ON−OFF on development. A tie or nonpositive best result
+remains in the returned development evidence. The independent held-out
+registration binds the frozen selection before entering its native calls.
+
 Keep the existing `step_gains` parameter for fixed-schedule replay and select
 one mode per request. Use disjoint calibration and evaluation cases. For CFP
 and CLABS, use `core.adaptive.calibrate_gate_budget` on steering-active
