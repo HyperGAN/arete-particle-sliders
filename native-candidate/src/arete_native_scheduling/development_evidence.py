@@ -8,6 +8,12 @@ from .prefix_first import _write_receipt
 
 
 _PANEL = "arete.a_psr.prefix_development_registration.v1"
+_SETTLED_TIMING_REASONS = {
+    "adaptive_prefix_incomplete",
+    "constant_prefix_incomplete",
+    "nearest_binary32_residual_under_exact_only_policy",
+    "observer_input_outside_existing_limits",
+}
 
 
 def _observer_scope(prepared, bank_ref, guard_ref):
@@ -218,9 +224,21 @@ def reduce_prefix_development(panel_ref, evidence, *, matcher):
                 case_ids=cases, trials=results, best_alphas=best, best_mean_gain=best_mean, ema_decay=None)
 
 
+def _trial_has_pending_evidence(trial):
+    if trial["status"] != "unmeasured":
+        return False
+    for case in trial["cases"]:
+        outcome = case["outcomes"]["adaptive"]
+        if outcome["status"] == "unmeasured" and outcome["reason"] not in _SETTLED_TIMING_REASONS:
+            return True
+    return False
+
+
 def freeze_prefix_development(panel_ref, evidence, output_path, *, matcher):
     """Write a first selection receipt for one unique measured development maximum."""
     result = reduce_prefix_development(panel_ref, evidence, matcher=matcher)
+    if any(_trial_has_pending_evidence(trial) for trial in result["trials"]):
+        return result | dict(frozen=None, freeze_reason="incomplete_development_evidence")
     best = result["best_alphas"]
     if not best:
         return result | dict(frozen=None, freeze_reason="no_eligible_development_alpha")

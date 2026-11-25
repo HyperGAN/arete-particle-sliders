@@ -242,9 +242,11 @@ settled observer evidence. [Shared reducer in core PR #336](https://github.com/H
 
 `freeze_prefix_development(panel_ref, evidence, output_path, matcher=matcher)`
 writes an exclusive first receipt for a unique eligible alpha with positive
-measured adaptive ON−OFF on development. A tie or nonpositive best result
-remains in the returned development evidence. The independent held-out
-registration binds the frozen selection before entering its native calls.
+measured adaptive ON−OFF on development after the grid settles. Missing
+observations, ties and nonpositive results remain visible in the development
+evidence. An observed early EOS can settle a timing-ineligible comparison.
+The independent held-out registration binds the frozen selection before
+entering its native calls.
 
 Keep the existing `step_gains` parameter for fixed-schedule replay and select
 one mode per request. Use disjoint calibration and evaluation cases. For CFP

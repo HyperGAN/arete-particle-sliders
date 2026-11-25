@@ -135,6 +135,24 @@ class DevelopmentEvidence(unittest.TestCase):
         self.assertIsNone(r["frozen"])
         self.assertFalse(self.frozen_path.exists())
 
+    def test_positive_measured_alpha_does_not_freeze_before_another_alpha_is_observed(self):
+        panel = self.panel(cases=("case-a",))
+        scores = {.25: {"case-a": self.cell(.25, "case-a", dict(off=1, adaptive=4, constant=3))}}
+        r = freeze_prefix_development(panel, scores, self.frozen_path, matcher=self.matcher)
+        self.assertEqual(r["best_alphas"], [.25])
+        self.assertEqual(r["freeze_reason"], "incomplete_development_evidence")
+        self.assertFalse(self.frozen_path.exists())
+
+    def test_settled_early_eos_does_not_block_a_measured_winner(self):
+        panel = self.panel(cases=("case-a",))
+        scores = {
+            .25: {"case-a": self.cell(.25, "case-a", dict(off=1, adaptive=4, constant=3))},
+            .5: {"case-a": self.cell(.5, "case-a", dict(off=1, adaptive=4), early="adaptive")},
+        }
+        r = freeze_prefix_development(panel, scores, self.frozen_path, matcher=self.matcher)
+        self.assertEqual(r["selected_alpha"], .25)
+        self.assertEqual(r["trials"][1]["cases"][0]["timing"]["reason"], "adaptive_prefix_incomplete")
+
     def test_complete_intensity_survives_unmeasured_timing(self):
         panel = self.panel(alphas=(.5,), cases=("case-a",))
         cell = self.cell(.5, "case-a", dict(off=1, adaptive=4, constant=3), early="constant")
