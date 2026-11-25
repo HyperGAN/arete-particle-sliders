@@ -152,18 +152,11 @@ def _timing(traces, matcher, dose_policy):
     return dict(status="unmeasured" if reason else "ready_for_observation", reason=reason, dose=dose)
 
 
-def prepare_blinded_trio(registration_ref, first_refs, *, matcher):
-    """Project frozen Arete native firsts into v3 tone and independent integrity rows.
-
-    The caller supplies the independently registered case, exact first references,
-    and archived qualified observer bindings. Absent firsts stay unmeasured. This
-    verifies and reads those references and creates no files or observer calls.
-    """
-    require_dose_matcher(matcher)
+def _read_registration(registration_ref):
     registration, registered_at = _verified_json(registration_ref)
     if (registration["schema"] != _REGISTRATION or registration["ema_decay"] is not None
-            or set(registration["arms"]) != set(_ARMS) or not isinstance(first_refs, dict)
-            or not set(first_refs) <= set(_ARMS) or registration["dose_policy"] not in {"exact", "nearest_binary32"}
+            or set(registration["arms"]) != set(_ARMS)
+            or registration["dose_policy"] not in {"exact", "nearest_binary32"}
             or type(registration["adaptive_strength"]) not in (int, float) or not isfinite(registration["adaptive_strength"])
             or not isinstance(registration["prompt"], str) or not registration["prompt"].strip()
             or not registration["integrity_output_contract"]):
@@ -180,6 +173,22 @@ def prepare_blinded_trio(registration_ref, first_refs, *, matcher):
         not isinstance(blind_id, str) or not re.fullmatch(r"tone-[0-9a-f]{12,64}", blind_id) for blind_id in blind_ids
     ):
         raise ValueError("Registered arms require distinct paths and opaque tone IDs")
+    return registration, registered_at
+
+
+def prepare_blinded_trio(registration_ref, first_refs, *, matcher):
+    """Project frozen Arete native firsts into v3 tone and independent integrity rows.
+
+    The caller supplies the independently registered case, exact first references,
+    and archived qualified observer bindings. Absent firsts stay unmeasured. This
+    verifies and reads those references and creates no files or observer calls.
+    """
+    require_dose_matcher(matcher)
+    if not isinstance(first_refs, dict) or not set(first_refs) <= set(_ARMS):
+        raise ValueError("Expected only registered native arm firsts")
+    registration, registered_at = _read_registration(registration_ref)
+    arms = registration["arms"]
+    scope = registration["scope"]
     _qualified_observers(registration["observer_binding"])
 
     traces, tone_rows, integrity_rows, private = {}, [], [], {}

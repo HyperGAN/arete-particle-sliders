@@ -175,14 +175,34 @@ authorized read scope, including the plan's separate integrity qualification.
 Each of `off`, `adaptive` and `constant` has distinct `claim_path`,
 `first_path`, `text_path`, `native_path` and a preregistered opaque `blind_id`.
 
-The runner writes each `arete.a_psr.prefix_native_intent.v1` before its native
-call, naming the exact `registration` reference, `arm`, `case_ref` and
-`ema_decay=None`. After the original text and native receipt are settled, it
-records the immutable `claim`, `text` and `native` references at `first_path`.
-For OFF use explicit zero on the same registered clock. The handoff verifies
-the resulting native traces and recomputes the constant receipt from actual
-per-layer gains. It retains valid early-EOS and missing-arm cases with
-unmeasured timing.
+Run each authorized arm through its existing guarded native RAW owner. Supply
+the exact complete native input IDs for the registered case. The registration
+uses the original writer's sidecar path `<text_path>.native.json`.
+
+```python
+from arete_native_scheduling import render_prefix_first
+
+first_ref = render_prefix_first(
+    registration_ref, arm, session, steering=steering,
+    ids=registered_native_ids, matcher=matcher,
+)
+```
+
+The entry point checks the native case and clock before writing its exclusive
+durable `arete.a_psr.prefix_native_intent.v1`. The original native text writer
+saves the finished text and sidecar. The entry point then records their
+immutable `claim`, `text` and `native` references at `first_path`.
+The caller serializes use of its native owner and controls access to the
+registered input and output paths. Previously settled firsts return their
+verified references. An entered arm with an unresolved first is retained and
+raises on a later call.
+
+OFF uses explicit zero on the same registered clock. Constant uses the
+verified completed adaptive prefix and returns `None` when early adaptive
+EOS left that prefix incomplete. The finished adaptive first is available
+for the handoff. The handoff recomputes the exact constant receipt from the
+observed per-layer gains and retains valid early-EOS and missing-arm cases
+with unmeasured timing.
 
 Pass the projected `tone_bank` rows to the original v3 tone scorer. It masks
 reported wording only in its internal scoring view. Pass `integrity_inputs`

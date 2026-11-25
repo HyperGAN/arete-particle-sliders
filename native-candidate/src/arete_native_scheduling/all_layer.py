@@ -302,17 +302,9 @@ def generate_all_layer_constant(session, *, steering, constant, case_ref, max_ne
                                constant=constant, request=request)
 
 
-def _generate_all_layer(session, *, steering, strength, max_new_tokens, eligible_tokens, case_ref, constant, request):
+def _all_layer_context(session, steering):
     if not isinstance(steering, _AllLayerBinding):
         raise ValueError("Load the exact authored A-PSR and base artifacts first")
-    if request.get("enable_thinking", False) is not False:
-        raise ValueError("Authored answer-only A-PSR requires native thinking disabled")
-    if type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 4096:
-        raise ValueError("Require the original native token-budget domain")
-    if ((eligible_tokens is None and case_ref is not None)
-            or (eligible_tokens is not None and (type(eligible_tokens) is not int
-                or not 1 <= eligible_tokens <= max_new_tokens or not isinstance(case_ref, str) or not case_ref.strip()))):
-        raise ValueError("Provide a finite registered answer prefix and nonempty case reference")
     native = _owned_native(session)
     if session.manifest.get("sha256") != steering.base_packet_sha256:
         raise ValueError("This owner does not contain the exact original RAW8 packet")
@@ -335,13 +327,33 @@ def _generate_all_layer(session, *, steering, strength, max_new_tokens, eligible
     artifacts = dict(base_raw_sha256=steering.base_file_sha256, base_packet_sha256=steering.base_packet_sha256,
                      authored_probe_sha256=steering.probe_sha256, authored_plan_sha256=steering.plan_sha256,
                      completed_authored_updates=steering.completed_updates)
+    return native, layers, actual, artifacts
+
+
+def _prefix_dose_scope(native, actual, artifacts, *, case_ref, eligible_tokens, max_new_tokens, max_tokens, seed):
+    return dict(case_ref=case_ref, eligible_tokens=eligible_tokens, max_new_tokens=max_new_tokens,
+                max_tokens=max_tokens, seed=seed, owner=type(native).__module__,
+                native_model_sha256=_digest(native.model_identity),
+                generation_config_sha256=_digest(native.native_model.generation_config.to_dict()),
+                layer_devices=[str(device) for device in actual], **artifacts)
+
+
+def _generate_all_layer(session, *, steering, strength, max_new_tokens, eligible_tokens, case_ref, constant, request):
+    if request.get("enable_thinking", False) is not False:
+        raise ValueError("Authored answer-only A-PSR requires native thinking disabled")
+    if type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 4096:
+        raise ValueError("Require the original native token-budget domain")
+    if ((eligible_tokens is None and case_ref is not None)
+            or (eligible_tokens is not None and (type(eligible_tokens) is not int
+                or not 1 <= eligible_tokens <= max_new_tokens or not isinstance(case_ref, str) or not case_ref.strip()))):
+        raise ValueError("Provide a finite registered answer prefix and nonempty case reference")
+    native, layers, actual, artifacts = _all_layer_context(session, steering)
+    model = native.native_model
     scope = None
     if eligible_tokens is not None:
-        scope = dict(case_ref=case_ref, eligible_tokens=eligible_tokens, max_new_tokens=max_new_tokens,
-                     max_tokens=request.get("max_tokens", 4096), seed=request.get("seed", 0),
-                     owner=type(native).__module__, native_model_sha256=_digest(native.model_identity),
-                     generation_config_sha256=_digest(model.generation_config.to_dict()),
-                     layer_devices=[str(device) for device in actual], **artifacts)
+        scope = _prefix_dose_scope(native, actual, artifacts, case_ref=case_ref, eligible_tokens=eligible_tokens,
+                                   max_new_tokens=max_new_tokens, max_tokens=request.get("max_tokens", 4096),
+                                   seed=request.get("seed", 0))
     probes = deepcopy(steering.probes) if strength or (constant is not None and any(constant.strengths)) else None
     answer_steps = []
     prefix = cache = None
