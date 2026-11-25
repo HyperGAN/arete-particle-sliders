@@ -74,6 +74,47 @@ output.save(output_path)
   replay fits made on decoder inputs after prefill.
   [PSR equations and training](https://arxiv.org/html/2605.03907v1)
 
+### Authored all-layer Arete A-PSR
+
+Load the independently verified authored RAW probe, its exact training plan and
+the original RAW8 packet as bytes. The loader binds the artifact digests and
+restores all 64 fitted FP32 probes on CPU. Open the base through its original
+native backend and placement. For the archived PG 0.11.0 cohort, use the
+existing guarded cached runtime and strict RAW8 restore. Bind that owner using
+its scope check and native text device context.
+
+```python
+from arete_native_scheduling import (
+    bind_archived_all_layer_session, generate_all_layer, load_all_layer_prompt_steering,
+)
+
+steering, base_packet = load_all_layer_prompt_steering(
+    core, probe_bytes=verified_probe_bytes, probe_sha256=verified_probe_sha256,
+    training_plan_bytes=verified_plan_bytes, base_raw_bytes=verified_raw8_bytes,
+    evidence_ref=evaluation_evidence,
+)
+session = bind_archived_all_layer_session(
+    restored_archived_owner, base_packet=base_packet, check=archive_scope_check,
+    render_context=archive_text_device_context,
+)
+output = generate_all_layer(
+    session, steering=steering, strength=calibrated_strength,
+    max_tokens=registered_context_limit, max_new_tokens=registered_token_budget, ids=prompt_ids,
+    enable_thinking=False, seed=seed,
+)
+```
+
+The saved adapter runs at zero strength while the shared A-PSR equation edits
+each block's output from the final prompt position onward. In native order,
+`adaptive_steering.answer_steps` records each output index, cache position,
+observed coefficient and effective strength per block. The first forward uses
+an empty dynamic cache, the same cache grows by one position per subsequent
+forward, and a generated EOS counts as its final output token. Coefficients and
+strengths use eight-digit IEEE-754 binary32 hex strings. Zero strength leaves
+each block output untouched and records zero effective strengths with null
+coefficients. The caller supplies the calibrated strength and the separately
+registered evaluation request.
+
 Keep the existing `step_gains` parameter for fixed-schedule replay and select
 one mode per request. Use disjoint calibration and evaluation cases. For CFP
 and CLABS, use `core.adaptive.calibrate_gate_budget` on steering-active
